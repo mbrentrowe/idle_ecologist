@@ -219,6 +219,12 @@ body {
 }
 .buy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+.tta-label {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+}
+
 /* ── Acre upgrade row ──────────────────────────────────── */
 .acre-upgrade-row {
   display: flex;

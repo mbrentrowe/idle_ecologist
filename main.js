@@ -142,6 +142,18 @@ function updateHeader() {
   }
 }
 
+// ── Time-to-afford helper ────────────────────────────────────────────────────
+function timeToUnlock(cost) {
+  const needed = cost - engine.gold.amount;
+  if (needed <= 0) return null;
+  const gps = engine.getTotalGPS() * engine.gameSpeed;
+  if (gps <= 0) return null;
+  const secs = needed / gps;
+  if (secs < 60)   return `~${Math.ceil(secs)}s`;
+  if (secs < 3600) return `~${Math.floor(secs / 60)}m ${Math.ceil(secs % 60)}s`;
+  return `~${(secs / 3600).toFixed(1)}h`;
+}
+
 // ── CROPS TAB ────────────────────────────────────────────────────────────────
 function renderCrops() {
   const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
@@ -181,6 +193,8 @@ function renderCrops() {
       buyBtn.disabled = engine.gold.amount < def.cost;
       buyBtn.addEventListener('click', () => { engine.unlockFarmZone(def.name); renderAll(); });
       costSpan.appendChild(buyBtn);
+      const farmZoneTta = timeToUnlock(def.cost);
+      if (farmZoneTta) costSpan.appendChild(el('span', 'tta-label', farmZoneTta));
       card.appendChild(costSpan);
     } else {
       const instance = engine.zoneCrops.get(def.name);
@@ -240,6 +254,8 @@ function renderCrops() {
       acreBtn.dataset.zoneName = def.name;
       acreBtn.addEventListener('click', () => { engine.upgradeZoneAcres(def.name); renderAll(); });
       acreRow.appendChild(acreBtn);
+      const acreTta = timeToUnlock(acreCost);
+      if (acreTta) acreRow.appendChild(el('span', 'tta-label', acreTta));
       card.appendChild(acreRow);
 
       // Worker upgrade row
@@ -253,6 +269,8 @@ function renderCrops() {
       wBtn.dataset.zoneNameW = def.name;
       wBtn.addEventListener('click', () => { engine.upgradeZoneWorkers(def.name); renderAll(); });
       workerRow.appendChild(wBtn);
+      const workerTta = timeToUnlock(workerCost);
+      if (workerTta) workerRow.appendChild(el('span', 'tta-label', workerTta));
       card.appendChild(workerRow);
     }
 
@@ -299,6 +317,8 @@ function renderArtisan() {
       buyBtn.disabled = engine.gold.amount < def.cost;
       buyBtn.addEventListener('click', () => { engine.unlockArtisanZone(def.name); renderAll(); });
       costRow.appendChild(buyBtn);
+      const artZoneTta = timeToUnlock(def.cost);
+      if (artZoneTta) costRow.appendChild(el('span', 'tta-label', artZoneTta));
       card.appendChild(costRow);
     } else {
       const cropId      = engine.artisanWS.zoneProductMap.get(def.name);
@@ -355,6 +375,8 @@ function renderArtisan() {
       wBtn.dataset.artZoneNameW = def.name;
       wBtn.addEventListener('click', () => { engine.upgradeArtisanWorkers(def.name); renderAll(); });
       artWorkerRow.appendChild(wBtn);
+      const artWorkerTta = timeToUnlock(artWorkerCost);
+      if (artWorkerTta) artWorkerRow.appendChild(el('span', 'tta-label', artWorkerTta));
       card.appendChild(artWorkerRow);
     }
 
