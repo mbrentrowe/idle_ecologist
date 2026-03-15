@@ -171,7 +171,7 @@ function renderZones() {
       // Acre upgrade row
       const currentAcres = engine.zoneAcres.get(def.name) ?? 4;
       const acreRow = el('div', 'acre-upgrade-row');
-      const acreCost = acreUpgradeCost(def);
+      const acreCost = acreUpgradeCost(def, currentAcres);
       const acreAtMax = currentAcres >= MAX_ZONE_ACRES;
       acreRow.innerHTML = `<span class="acre-label">Acres: <strong>${currentAcres} / ${MAX_ZONE_ACRES}</strong></span>`;
       if (!acreAtMax) {

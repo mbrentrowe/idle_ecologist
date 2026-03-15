@@ -9,7 +9,7 @@ export const DAY_REAL_SECS = 240; // 4 real minutes = 1 in-game day
 const SAVE_KEY             = 'idle-ecologist-text-v1';
 
 // ── Zone definitions (no Tiled map needed) ────────────────────────────────────
-export const BASE_ZONE_ACRES = 4;
+export const BASE_ZONE_ACRES = 1;
 export const MAX_ZONE_ACRES  = 20;
 
 export const FARM_ZONE_DEFS = [
@@ -30,9 +30,10 @@ export const FARM_ZONE_DEFS = [
   { name: 'The Grand Flat',     cost:    2000000 },
 ];
 
-/** Cost to buy one extra acre in a given zone. */
-export function acreUpgradeCost(def) {
-  return Math.max(500, Math.round(def.cost * 0.05));
+/** Cost to buy one extra acre in a given zone. Scales with how many acres already owned. */
+export function acreUpgradeCost(def, currentAcres) {
+  const base = Math.max(500, Math.round(def.cost * 0.05));
+  return Math.round(base * currentAcres);
 }
 
 export const ARTISAN_ZONE_DEFS = [
@@ -245,8 +246,10 @@ export function createEngine() {
     }
     for (const def of FARM_ZONE_DEFS) {
       if (!unlockedFarmZones.has(def.name)) continue;
-      if ((zoneAcres.get(def.name) ?? BASE_ZONE_ACRES) < MAX_ZONE_ACRES)
-        candidates.push({ type: 'acre', name: def.name, cost: acreUpgradeCost(def) });
+      if ((zoneAcres.get(def.name) ?? BASE_ZONE_ACRES) < MAX_ZONE_ACRES) {
+        const cur = zoneAcres.get(def.name) ?? BASE_ZONE_ACRES;
+        candidates.push({ type: 'acre', name: def.name, cost: acreUpgradeCost(def, cur) });
+      }
     }
     if (candidates.length > 0) {
       const cheapest = candidates.reduce((a, b) => a.cost < b.cost ? a : b);
@@ -461,7 +464,7 @@ export function createEngine() {
       const current = zoneAcres.get(name) ?? BASE_ZONE_ACRES;
       if (!def || !unlockedFarmZones.has(name)) return false;
       if (current >= MAX_ZONE_ACRES) return false;
-      const cost = acreUpgradeCost(def);
+      const cost = acreUpgradeCost(def, current);
       if (gold.amount < cost) return false;
       gold.add(-cost);
       zoneAcres.set(name, current + 1);
