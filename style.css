@@ -17,6 +17,9 @@ body {
   background: rgba(10,10,10,0.97);
   border-bottom: 2px solid #ffd700;
   padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
   display: flex;
   align-items: center;
   gap: 14px;
@@ -92,6 +95,9 @@ body {
 /* ── Main content ────────────────────────────────────────── */
 #content {
   padding: 12px 14px 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  padding-left: calc(14px + env(safe-area-inset-left));
+  padding-right: calc(14px + env(safe-area-inset-right));
   max-width: 700px;
   width: 100%;
   margin: 0 auto;
@@ -364,6 +370,8 @@ body {
 /* ── Settings ────────────────────────────────────────────── */
 .settings-section { margin-bottom: 20px; }
 .settings-label   { font-weight: bold; color: #ddd; margin-bottom: 6px; }
+.settings-desc    { font-size: 12px; color: #666; margin-bottom: 8px; }
+.wl-on { background: rgba(40,120,40,0.35) !important; border-color: #7dff7d !important; color: #7dff7d !important; }
 .settings-desc    { color: #777; font-size: 12px; margin: 4px 0 8px; line-height: 1.5; }
 
 /* ── Offline toast ───────────────────────────────────────── */

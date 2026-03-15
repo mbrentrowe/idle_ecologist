@@ -26,6 +26,20 @@ if (saved) {
 setInterval(() => engine.tick(), 250);
 setInterval(() => engine.save(), 10000);
 
+// ── Wake Lock ───────────────────────────────────────────────────────────
+let _wakeLock = null;
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+  } catch (_) { /* denied or unavailable */ }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') acquireWakeLock();
+});
+acquireWakeLock();
+
 // ── Tab state ─────────────────────────────────────────────────────────────────
 const TABS = ['zones', 'market', 'stats', 'settings'];
 let activeTab = 'zones';
@@ -546,6 +560,38 @@ function renderSettings() {
   apBtn.addEventListener('click', () => { engine.setAutoPilot(!engine.autoPilot); renderAll(); });
   apSection.appendChild(apBtn);
   content.appendChild(apSection);
+
+  // Screen (fullscreen + wake lock)
+  const screenSection = el('div', 'settings-section');
+  screenSection.appendChild(el('div', 'settings-label', '📱 Screen'));
+  const screenBtnRow = el('div', 'btn-row');
+  if (document.fullscreenEnabled) {
+    const fsBtn = el('button', 'action-btn', document.fullscreenElement ? '⛶ Exit Fullscreen' : '⛶ Fullscreen');
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+      setTimeout(() => renderAll(), 300);
+    });
+    screenBtnRow.appendChild(fsBtn);
+  } else {
+    screenSection.appendChild(el('p', 'settings-desc',
+      '📱 iOS: tap Share → “Add to Home Screen” to play fullscreen.'));
+  }
+  if ('wakeLock' in navigator) {
+    const wlOn = _wakeLock !== null;
+    const wlBtn = el('button', `action-btn${wlOn ? ' wl-on' : ''}`, wlOn ? '🔆 Keep screen on: ON' : '🔅 Keep screen on: OFF');
+    wlBtn.addEventListener('click', async () => {
+      if (_wakeLock) { await _wakeLock.release(); _wakeLock = null; }
+      else { await acquireWakeLock(); }
+      renderAll();
+    });
+    screenBtnRow.appendChild(wlBtn);
+  }
+  screenSection.appendChild(screenBtnRow);
+  content.appendChild(screenSection);
 
   // Save / Reset
   const saveSection = el('div', 'settings-section');

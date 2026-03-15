@@ -1,0 +1,10 @@
+{
+  "name": "Idle Ecologist",
+  "short_name": "Idle Eco",
+  "description": "An idle farming game for ecologists.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait"
+}
