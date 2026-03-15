@@ -215,13 +215,18 @@ function renderZones() {
         : '';
       card.appendChild(phaseRow);
 
-      // Crop selector
-      const sel = makeSelect(
-        Object.values(CROPS).filter(c => c.isUnlocked(engine.cropStats, lifetimeGold)),
-        ct?.id,
-        cropId => { engine.assignCrop(def.name, cropId); renderAll(); }
-      );
-      card.appendChild(sel);
+      // Crop selector chips
+      const availCropsZone = Object.values(CROPS).filter(c => c.isUnlocked(engine.cropStats, lifetimeGold));
+      const cropPickerWrap = el('div', 'zone-chip-picker');
+      const cropChips = el('div', 'set-all-chips');
+      availCropsZone.forEach(c => {
+        const chip = el('button', `set-all-chip${c.id === ct?.id ? ' active' : ''}`);
+        chip.innerHTML = cropIconHtml(CROP_ICON_GID[c.id], 18) + `<span>${c.name}</span>`;
+        chip.addEventListener('click', () => { engine.assignCrop(def.name, c.id); renderAll(); });
+        cropChips.appendChild(chip);
+      });
+      cropPickerWrap.appendChild(cropChips);
+      card.appendChild(cropPickerWrap);
 
       // Acre upgrade row
       const currentAcres = engine.zoneAcres.get(def.name) ?? 1;
@@ -333,12 +338,16 @@ function renderZones() {
 
       const artisanCrops = Object.values(CROPS).filter(c =>
         c.artisanProduct && c.isUnlocked(engine.cropStats, lifetimeGold));
-      const sel = makeSelect(
-        artisanCrops,
-        cropId,
-        id => { engine.assignArtisanProduct(def.name, id); renderAll(); }
-      );
-      card.appendChild(sel);
+      const artPickerWrap = el('div', 'zone-chip-picker');
+      const artChipsEl = el('div', 'set-all-chips');
+      artisanCrops.forEach(c => {
+        const chip = el('button', `set-all-chip${c.id === cropId ? ' active' : ''}`);
+        chip.innerHTML = cropIconHtml(CROP_ICON_GID[c.id], 18) + `<span>${c.artisanProduct.name}</span>`;
+        chip.addEventListener('click', () => { engine.assignArtisanProduct(def.name, c.id); renderAll(); });
+        artChipsEl.appendChild(chip);
+      });
+      artPickerWrap.appendChild(artChipsEl);
+      card.appendChild(artPickerWrap);
 
       // Worker upgrade row
       const artWorkerAtMax = artWorkers >= MAX_ZONE_WORKERS;
@@ -359,27 +368,6 @@ function renderZones() {
 
     content.appendChild(card);
   });
-}
-
-function makeSelect(crops, currentId, onChange) {
-  const wrap = el('div', 'select-wrap');
-  const sel  = document.createElement('select');
-  sel.className = 'crop-select';
-  if (!currentId) {
-    const opt = document.createElement('option');
-    opt.value = ''; opt.textContent = '— Select —';
-    sel.appendChild(opt);
-  }
-  crops.forEach(ct => {
-    const opt = document.createElement('option');
-    opt.value       = ct.id;
-    opt.textContent = `${CROP_EMOJI[ct.id] ?? '🌱'} ${ct.name}`;
-    opt.selected    = ct.id === currentId;
-    sel.appendChild(opt);
-  });
-  sel.addEventListener('change', () => { if (sel.value) onChange(sel.value); });
-  wrap.appendChild(sel);
-  return wrap;
 }
 
 // ── MARKET TAB ────────────────────────────────────────────────────────────────
@@ -640,13 +628,15 @@ function showOfflineToast(result, realSecs) {
 let lastZonesFingerprint = '';
 
 function zonesFingerprint() {
+  const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
+  const unlockedCropCount = Object.values(CROPS).filter(c => c.isUnlocked(engine.cropStats, lifetimeGold)).length;
   const farmParts = FARM_ZONE_DEFS
     .filter(d => engine.unlockedFarmZones.has(d.name))
     .map(d => `${d.name}:${engine.zoneAcres.get(d.name) ?? 1}:${engine.zoneWorkers.get(d.name) ?? 1}`).join(',');
   const artParts = ARTISAN_ZONE_DEFS
     .filter(d => engine.artisanWS.unlockedSet.has(d.name))
     .map(d => `${d.name}:${engine.artisanWorkers.get(d.name) ?? 1}`).join(',');
-  return `f${engine.unlockedFarmZones.size}|a${engine.artisanWS.unlockedSet.size}|${farmParts}|${artParts}`;
+  return `f${engine.unlockedFarmZones.size}|a${engine.artisanWS.unlockedSet.size}|c${unlockedCropCount}|${farmParts}|${artParts}`;
 }
 
 function liveUpdate() {

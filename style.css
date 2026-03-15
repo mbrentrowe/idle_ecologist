@@ -273,6 +273,11 @@ body {
   font-weight: bold;
 }
 
+/* ── Per-zone chip picker ─────────────────────────────── */
+.zone-chip-picker {
+  margin-top: 6px;
+}
+
 /* ── Crop sprite icons ───────────────────────────────────── */
 .crop-icon {
   display: inline-block;
