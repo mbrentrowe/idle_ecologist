@@ -1,5 +1,5 @@
 // main.js — UI layer and entry point for Idle Ecologist Text UI
-import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_SECS } from './game.js';
+import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_SECS, MAX_ZONE_ACRES, acreUpgradeCost } from './game.js';
 import { CROPS } from './crops.js';
 
 // ── Crop emoji map ────────────────────────────────────────────────────────────
@@ -136,8 +136,8 @@ function renderZones() {
       topRow.innerHTML = `
         <span class="zone-emoji">${emoji}</span>
         <span class="zone-name">${def.name}</span>
-        <span class="zone-meta">${ct?.name ?? '—'} · ${def.tileCount} acres</span>
-        <span class="zone-gps">🪙 ${shortNumber((ct?.yieldGold ?? 0) * def.tileCount)} / harvest</span>
+        <span class="zone-meta">${ct?.name ?? '—'} · ${engine.zoneAcres.get(def.name) ?? 4} acres</span>
+        <span class="zone-gps">🪙 ${shortNumber((ct?.yieldGold ?? 0) * (engine.zoneAcres.get(def.name) ?? 4))} / harvest</span>
       `;
       card.appendChild(topRow);
 
@@ -167,6 +167,22 @@ function renderZones() {
         cropId => { engine.assignCrop(def.name, cropId); renderAll(); }
       );
       card.appendChild(sel);
+
+      // Acre upgrade row
+      const currentAcres = engine.zoneAcres.get(def.name) ?? 4;
+      const acreRow = el('div', 'acre-upgrade-row');
+      const acreCost = acreUpgradeCost(def);
+      const acreAtMax = currentAcres >= MAX_ZONE_ACRES;
+      acreRow.innerHTML = `<span class="acre-label">Acres: <strong>${currentAcres} / ${MAX_ZONE_ACRES}</strong></span>`;
+      if (!acreAtMax) {
+        const acreBtn = el('button', 'buy-btn acre-btn', `+1 acre — 🪙 ${shortNumber(acreCost)}`);
+        acreBtn.disabled = engine.gold.amount < acreCost;
+        acreBtn.addEventListener('click', () => { engine.upgradeZoneAcres(def.name); renderAll(); });
+        acreRow.appendChild(acreBtn);
+      } else {
+        acreRow.appendChild(el('span', 'acre-max', '✅ Max'));
+      }
+      card.appendChild(acreRow);
     }
 
     content.appendChild(card);

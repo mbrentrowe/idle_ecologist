@@ -9,23 +9,31 @@ export const DAY_REAL_SECS = 240; // 4 real minutes = 1 in-game day
 const SAVE_KEY             = 'idle-ecologist-text-v1';
 
 // ── Zone definitions (no Tiled map needed) ────────────────────────────────────
+export const BASE_ZONE_ACRES = 4;
+export const MAX_ZONE_ACRES  = 20;
+
 export const FARM_ZONE_DEFS = [
-  { name: 'Sunflower Patch',    tileCount:  4, cost:          0 }, // starter, free
-  { name: 'Clover Corner',      tileCount:  4, cost:      10000 },
-  { name: 'Buttercup Field',    tileCount:  6, cost:      20000 },
-  { name: 'Willowbrook Plot',   tileCount:  6, cost:      30000 },
-  { name: 'Mossy Hollow',       tileCount:  9, cost:      50000 },
-  { name: 'Foxglove Run',       tileCount:  9, cost:      70000 },
-  { name: 'Hawthorn Strip',     tileCount:  9, cost:     100000 },
-  { name: 'Ember Meadow',       tileCount: 12, cost:     150000 },
-  { name: 'Brackenfold',        tileCount: 12, cost:     200000 },
-  { name: 'Ironwood Terrace',   tileCount: 12, cost:     300000 },
-  { name: 'Stonegate Field',    tileCount: 16, cost:     500000 },
-  { name: 'Copperleaf Plot',    tileCount: 16, cost:     750000 },
-  { name: 'Silverbrook Acre',   tileCount: 20, cost:    1000000 },
-  { name: 'Thornfield Rise',    tileCount: 20, cost:    1500000 },
-  { name: 'The Grand Flat',     tileCount: 25, cost:    2000000 },
+  { name: 'Sunflower Patch',    cost:          0 }, // starter, free
+  { name: 'Clover Corner',      cost:      10000 },
+  { name: 'Buttercup Field',    cost:      20000 },
+  { name: 'Willowbrook Plot',   cost:      30000 },
+  { name: 'Mossy Hollow',       cost:      50000 },
+  { name: 'Foxglove Run',       cost:      70000 },
+  { name: 'Hawthorn Strip',     cost:     100000 },
+  { name: 'Ember Meadow',       cost:     150000 },
+  { name: 'Brackenfold',        cost:     200000 },
+  { name: 'Ironwood Terrace',   cost:     300000 },
+  { name: 'Stonegate Field',    cost:     500000 },
+  { name: 'Copperleaf Plot',    cost:     750000 },
+  { name: 'Silverbrook Acre',   cost:    1000000 },
+  { name: 'Thornfield Rise',    cost:    1500000 },
+  { name: 'The Grand Flat',     cost:    2000000 },
 ];
+
+/** Cost to buy one extra acre in a given zone. */
+export function acreUpgradeCost(def) {
+  return Math.max(500, Math.round(def.cost * 0.05));
+}
 
 export const ARTISAN_ZONE_DEFS = [
   { name: 'The Potting Shed',         cost:       75000 },
@@ -65,12 +73,15 @@ export function createEngine() {
   let   inGameDay    = 1;
 
   // ── Farm zones ──────────────────────────────────────────────────────────────
-  const unlockedFarmZones = new Set(['FarmZone01']);
-  const zoneCrops = new Map(); // zoneName → CropInstance
-  zoneCrops.set('FarmZone01', new CropInstance(CROPS.strawberry));
+  const STARTER_ZONE = FARM_ZONE_DEFS[0].name;
+  const unlockedFarmZones = new Set([STARTER_ZONE]);
+  const zoneCrops  = new Map(); // zoneName → CropInstance
+  const zoneAcres  = new Map(); // zoneName → current acres
+  zoneCrops.set(STARTER_ZONE, new CropInstance(CROPS.strawberry));
+  zoneAcres.set(STARTER_ZONE, BASE_ZONE_ACRES);
 
   function farmTileCount(zoneName) {
-    return FARM_ZONE_DEFS.find(d => d.name === zoneName)?.tileCount ?? 1;
+    return zoneAcres.get(zoneName) ?? BASE_ZONE_ACRES;
   }
 
   // ── Artisan workState ───────────────────────────────────────────────────────
@@ -136,7 +147,7 @@ export function createEngine() {
     const soldCount = cropStats.get(cropId)?.sold ?? 0;
     const apGPS = (ap.goldValue / ap.cropInputCount) / cycleTime;
     if (soldCount >= ap.unlockCropSold) return apGPS;
-    const totalTiles = FARM_ZONE_DEFS.filter(d => unlockedFarmZones.has(d.name)).reduce((s, d) => s + d.tileCount, 0);
+    const totalTiles = FARM_ZONE_DEFS.filter(d => unlockedFarmZones.has(d.name)).reduce((s, d) => s + (zoneAcres.get(d.name) ?? BASE_ZONE_ACRES), 0);
     const soldPerSec = totalTiles / cycleTime;
     if (soldPerSec <= 0) return rawGPS;
     const unlockTime = (ap.unlockCropSold - soldCount) / soldPerSec;
@@ -238,6 +249,7 @@ export function createEngine() {
         gold.add(-cheapest.cost);
         if (cheapest.type === 'farm') {
           unlockedFarmZones.add(cheapest.name);
+          zoneAcres.set(cheapest.name, BASE_ZONE_ACRES);
           if (bestId) zoneCrops.set(cheapest.name, new CropInstance(CROPS[bestId]));
         } else {
           artisanWS.unlockedSet.add(cheapest.name);
@@ -337,6 +349,7 @@ export function createEngine() {
       gold: gold.amount, gameSpeed, autoPilot,
       calendarAccum, inGameDay,
       unlockedFarmZones: [...unlockedFarmZones],
+      zoneAcres: Object.fromEntries(zoneAcres),
       unlockedArtisanZones: [...artisanWS.unlockedSet],
       zoneCrops: Object.fromEntries([...zoneCrops].map(([k, v]) => [k, { cropId: v.cropType.id, phase: v.phase, timer: v.timer }])),
       cropInventory: Object.fromEntries(cropInventory),
@@ -367,6 +380,14 @@ export function createEngine() {
     if (Array.isArray(s.unlockedFarmZones)) {
       unlockedFarmZones.clear();
       s.unlockedFarmZones.forEach(n => unlockedFarmZones.add(n));
+    }
+    if (s.zoneAcres) {
+      zoneAcres.clear();
+      Object.entries(s.zoneAcres).forEach(([k, v]) => zoneAcres.set(k, v));
+      // back-fill any unlocked zones missing from save (e.g. saves before this feature)
+      for (const n of unlockedFarmZones) {
+        if (!zoneAcres.has(n)) zoneAcres.set(n, BASE_ZONE_ACRES);
+      }
     }
     if (Array.isArray(s.unlockedArtisanZones)) {
       artisanWS.unlockedSet.clear();
@@ -405,6 +426,9 @@ export function createEngine() {
     FARM_ZONE_DEFS,
     ARTISAN_ZONE_DEFS,
     unlockedFarmZones,
+    zoneAcres,
+    MAX_ZONE_ACRES,
+    acreUpgradeCost,
     artisanWS,
     zoneCrops,
     cropInventory,
@@ -420,8 +444,20 @@ export function createEngine() {
       if (!def || gold.amount < def.cost) return false;
       gold.add(-def.cost);
       unlockedFarmZones.add(name);
+      zoneAcres.set(name, BASE_ZONE_ACRES);
       const cropId = [...zoneCrops.values()][0]?.cropType.id ?? 'strawberry';
       zoneCrops.set(name, new CropInstance(CROPS[cropId]));
+      return true;
+    },
+    upgradeZoneAcres(name) {
+      const def     = FARM_ZONE_DEFS.find(d => d.name === name);
+      const current = zoneAcres.get(name) ?? BASE_ZONE_ACRES;
+      if (!def || !unlockedFarmZones.has(name)) return false;
+      if (current >= MAX_ZONE_ACRES) return false;
+      const cost = acreUpgradeCost(def);
+      if (gold.amount < cost) return false;
+      gold.add(-cost);
+      zoneAcres.set(name, current + 1);
       return true;
     },
     unlockArtisanZone(name) {
