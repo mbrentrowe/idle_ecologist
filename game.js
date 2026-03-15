@@ -10,9 +10,7 @@ const SAVE_KEY             = 'idle-ecologist-text-v1';
 
 // ── Zone definitions (no Tiled map needed) ────────────────────────────────────
 export const BASE_ZONE_ACRES   = 1;
-export const MAX_ZONE_ACRES    = 20;
 export const BASE_ZONE_WORKERS = 1;
-export const MAX_ZONE_WORKERS  = 10;
 
 /** Speed multiplier for a zone with w workers: 1× at 1 worker, 2× at 10. */
 export function workerMultiplier(w) { return 1 + (w - 1) / 9; }
@@ -260,21 +258,15 @@ export function createEngine() {
     }
     for (const def of FARM_ZONE_DEFS) {
       if (!unlockedFarmZones.has(def.name)) continue;
-      if ((zoneAcres.get(def.name) ?? BASE_ZONE_ACRES) < MAX_ZONE_ACRES) {
-        const cur = zoneAcres.get(def.name) ?? BASE_ZONE_ACRES;
-        candidates.push({ type: 'acre', name: def.name, cost: acreUpgradeCost(def, cur) });
-      }
-      if ((zoneWorkers.get(def.name) ?? BASE_ZONE_WORKERS) < MAX_ZONE_WORKERS) {
-        const cur = zoneWorkers.get(def.name) ?? BASE_ZONE_WORKERS;
-        candidates.push({ type: 'farmWorker', name: def.name, cost: workerUpgradeCost(def, cur) });
-      }
+      const curAcres = zoneAcres.get(def.name) ?? BASE_ZONE_ACRES;
+      candidates.push({ type: 'acre', name: def.name, cost: acreUpgradeCost(def, curAcres) });
+      const curFW = zoneWorkers.get(def.name) ?? BASE_ZONE_WORKERS;
+      candidates.push({ type: 'farmWorker', name: def.name, cost: workerUpgradeCost(def, curFW) });
     }
     for (const def of ARTISAN_ZONE_DEFS) {
       if (!artisanWS.unlockedSet.has(def.name)) continue;
-      if ((artisanWorkers.get(def.name) ?? BASE_ZONE_WORKERS) < MAX_ZONE_WORKERS) {
-        const cur = artisanWorkers.get(def.name) ?? BASE_ZONE_WORKERS;
-        candidates.push({ type: 'artisanWorker', name: def.name, cost: workerUpgradeCost(def, cur) });
-      }
+      const curAW = artisanWorkers.get(def.name) ?? BASE_ZONE_WORKERS;
+      candidates.push({ type: 'artisanWorker', name: def.name, cost: workerUpgradeCost(def, curAW) });
     }
     if (candidates.length > 0) {
       const cheapest = candidates.reduce((a, b) => a.cost < b.cost ? a : b);
@@ -500,8 +492,8 @@ export function createEngine() {
     unlockedFarmZones,
     zoneAcres,
     zoneWorkers,
-    MAX_ZONE_ACRES,
-    MAX_ZONE_WORKERS,
+    MAX_ZONE_ACRES:   Infinity,
+    MAX_ZONE_WORKERS: Infinity,
     acreUpgradeCost,
     workerUpgradeCost,
     workerMultiplier,
@@ -532,7 +524,6 @@ export function createEngine() {
       const def     = FARM_ZONE_DEFS.find(d => d.name === name);
       const current = zoneAcres.get(name) ?? BASE_ZONE_ACRES;
       if (!def || !unlockedFarmZones.has(name)) return false;
-      if (current >= MAX_ZONE_ACRES) return false;
       const cost = acreUpgradeCost(def, current);
       if (gold.amount < cost) return false;
       gold.add(-cost);
@@ -543,7 +534,6 @@ export function createEngine() {
       const def     = FARM_ZONE_DEFS.find(d => d.name === name);
       const current = zoneWorkers.get(name) ?? BASE_ZONE_WORKERS;
       if (!def || !unlockedFarmZones.has(name)) return false;
-      if (current >= MAX_ZONE_WORKERS) return false;
       const cost = workerUpgradeCost(def, current);
       if (gold.amount < cost) return false;
       gold.add(-cost);
@@ -563,7 +553,6 @@ export function createEngine() {
       const def     = ARTISAN_ZONE_DEFS.find(d => d.name === name);
       const current = artisanWorkers.get(name) ?? BASE_ZONE_WORKERS;
       if (!def || !artisanWS.unlockedSet.has(name)) return false;
-      if (current >= MAX_ZONE_WORKERS) return false;
       const cost = workerUpgradeCost(def, current);
       if (gold.amount < cost) return false;
       gold.add(-cost);

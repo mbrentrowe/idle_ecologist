@@ -1,5 +1,5 @@
 // main.js — UI layer and entry point for Idle Ecologist Text UI
-import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_SECS, MAX_ZONE_ACRES, MAX_ZONE_WORKERS, acreUpgradeCost, workerUpgradeCost, workerMultiplier } from './game.js';
+import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_SECS, acreUpgradeCost, workerUpgradeCost, workerMultiplier } from './game.js';
 import { CROPS } from './crops.js';
 
 // ── Crop emoji map ────────────────────────────────────────────────────────────
@@ -232,17 +232,12 @@ function renderZones() {
       const currentAcres = engine.zoneAcres.get(def.name) ?? 1;
       const acreRow = el('div', 'acre-upgrade-row');
       const acreCost = acreUpgradeCost(def, currentAcres);
-      const acreAtMax = currentAcres >= MAX_ZONE_ACRES;
-      acreRow.innerHTML = `<span class="acre-label">Acres: <strong>${currentAcres} / ${MAX_ZONE_ACRES}</strong></span>`;
-      if (!acreAtMax) {
-        const acreBtn = el('button', 'buy-btn acre-btn', `+1 acre \u2014 \ud83e\ude99 ${shortNumber(acreCost)}`);
-        acreBtn.disabled = engine.gold.amount < acreCost;
-        acreBtn.dataset.zoneName = def.name;
-        acreBtn.addEventListener('click', () => { engine.upgradeZoneAcres(def.name); renderAll(); });
-        acreRow.appendChild(acreBtn);
-      } else {
-        acreRow.appendChild(el('span', 'acre-max', '\u2705 Max'));
-      }
+      acreRow.innerHTML = `<span class="acre-label">Acres: <strong>${currentAcres}</strong></span>`;
+      const acreBtn = el('button', 'buy-btn acre-btn', `+1 acre \u2014 \ud83e\ude99 ${shortNumber(acreCost)}`);
+      acreBtn.disabled = engine.gold.amount < acreCost;
+      acreBtn.dataset.zoneName = def.name;
+      acreBtn.addEventListener('click', () => { engine.upgradeZoneAcres(def.name); renderAll(); });
+      acreRow.appendChild(acreBtn);
       card.appendChild(acreRow);
 
       // Worker upgrade row
@@ -250,17 +245,12 @@ function renderZones() {
       const workerRow  = el('div', 'acre-upgrade-row');
       const workerCost = workerUpgradeCost(def, currentWorkers);
       const mult       = workerMultiplier(currentWorkers);
-      const workerAtMax = currentWorkers >= MAX_ZONE_WORKERS;
-      workerRow.innerHTML = `<span class="acre-label">Workers: <strong>${currentWorkers} / ${MAX_ZONE_WORKERS}</strong> <span style="color:#aaa;font-size:11px">(${mult.toFixed(2)}\u00d7 speed)</span></span>`;
-      if (!workerAtMax) {
-        const wBtn = el('button', 'buy-btn acre-btn worker-btn', `+1 worker \u2014 \ud83e\ude99 ${shortNumber(workerCost)}`);
-        wBtn.disabled = engine.gold.amount < workerCost;
-        wBtn.dataset.zoneNameW = def.name;
-        wBtn.addEventListener('click', () => { engine.upgradeZoneWorkers(def.name); renderAll(); });
-        workerRow.appendChild(wBtn);
-      } else {
-        workerRow.appendChild(el('span', 'acre-max', '\u2705 Max'));
-      }
+      workerRow.innerHTML = `<span class="acre-label">Workers: <strong>${currentWorkers}</strong> <span style="color:#aaa;font-size:11px">(${mult.toFixed(2)}\u00d7 speed)</span></span>`;
+      const wBtn = el('button', 'buy-btn acre-btn worker-btn', `+1 worker \u2014 \ud83e\ude99 ${shortNumber(workerCost)}`);
+      wBtn.disabled = engine.gold.amount < workerCost;
+      wBtn.dataset.zoneNameW = def.name;
+      wBtn.addEventListener('click', () => { engine.upgradeZoneWorkers(def.name); renderAll(); });
+      workerRow.appendChild(wBtn);
       card.appendChild(workerRow);
     }
 
@@ -350,19 +340,14 @@ function renderZones() {
       card.appendChild(artPickerWrap);
 
       // Worker upgrade row
-      const artWorkerAtMax = artWorkers >= MAX_ZONE_WORKERS;
       const artWorkerCost  = workerUpgradeCost(def, artWorkers);
       const artWorkerRow   = el('div', 'acre-upgrade-row');
-      artWorkerRow.innerHTML = `<span class="acre-label">Workers: <strong>${artWorkers} / ${MAX_ZONE_WORKERS}</strong> <span style="color:#aaa;font-size:11px">(${artMult.toFixed(2)}× speed)</span></span>`;
-      if (!artWorkerAtMax) {
-        const wBtn = el('button', 'buy-btn acre-btn worker-btn', `+1 worker — 🪙 ${shortNumber(artWorkerCost)}`);
-        wBtn.disabled = engine.gold.amount < artWorkerCost;
-        wBtn.dataset.artZoneNameW = def.name;
-        wBtn.addEventListener('click', () => { engine.upgradeArtisanWorkers(def.name); renderAll(); });
-        artWorkerRow.appendChild(wBtn);
-      } else {
-        artWorkerRow.appendChild(el('span', 'acre-max', '✅ Max'));
-      }
+      artWorkerRow.innerHTML = `<span class="acre-label">Workers: <strong>${artWorkers}</strong> <span style="color:#aaa;font-size:11px">(${artMult.toFixed(2)}× speed)</span></span>`;
+      const wBtn = el('button', 'buy-btn acre-btn worker-btn', `+1 worker — 🪙 ${shortNumber(artWorkerCost)}`);
+      wBtn.disabled = engine.gold.amount < artWorkerCost;
+      wBtn.dataset.artZoneNameW = def.name;
+      wBtn.addEventListener('click', () => { engine.upgradeArtisanWorkers(def.name); renderAll(); });
+      artWorkerRow.appendChild(wBtn);
       card.appendChild(artWorkerRow);
     }
 
