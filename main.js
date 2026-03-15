@@ -113,6 +113,34 @@ function renderZones() {
   const farmHeader = el('h2', 'section-header', '🌾 Farm Zones');
   content.appendChild(farmHeader);
 
+  // "Set all farms" row — only when 2+ zones are unlocked
+  const unlockedFarmDefs = FARM_ZONE_DEFS.filter(d => engine.unlockedFarmZones.has(d.name));
+  if (unlockedFarmDefs.length > 1) {
+    const availCrops = Object.values(CROPS).filter(c => c.isUnlocked(engine.cropStats, lifetimeGold));
+    const setAllRow = el('div', 'set-all-row');
+    const setAllSel = document.createElement('select');
+    setAllSel.className = 'crop-select';
+    const ph = document.createElement('option'); ph.value = ''; ph.textContent = '— pick crop —';
+    setAllSel.appendChild(ph);
+    availCrops.forEach(ct => {
+      const opt = document.createElement('option');
+      opt.value = ct.id;
+      opt.textContent = `${CROP_EMOJI[ct.id] ?? '🌱'} ${ct.name}`;
+      setAllSel.appendChild(opt);
+    });
+    const setAllBtn = el('button', 'buy-btn set-all-btn', 'Set All Farms');
+    setAllBtn.addEventListener('click', () => {
+      const id = setAllSel.value;
+      if (!id) return;
+      unlockedFarmDefs.forEach(d => engine.assignCrop(d.name, id));
+      renderAll();
+    });
+    setAllRow.appendChild(el('span', 'set-all-label', 'Set all:'));
+    setAllRow.appendChild(setAllSel);
+    setAllRow.appendChild(setAllBtn);
+    content.appendChild(setAllRow);
+  }
+
   FARM_ZONE_DEFS.forEach(def => {
     const unlocked = engine.unlockedFarmZones.has(def.name);
     const card = el('div', `zone-card${unlocked ? '' : ' locked'}`);
@@ -210,6 +238,34 @@ function renderZones() {
   // ── Artisan Workshops ──
   const artHeader = el('h2', 'section-header', '🏺 Artisan Workshops');
   content.appendChild(artHeader);
+
+  // "Set all artisan workshops" row — only when 2+ are unlocked
+  const unlockedArtisanDefs = ARTISAN_ZONE_DEFS.filter(d => engine.artisanWS.unlockedSet.has(d.name));
+  if (unlockedArtisanDefs.length > 1) {
+    const availArtisanCrops = Object.values(CROPS).filter(c => c.artisanProduct && c.isUnlocked(engine.cropStats, lifetimeGold));
+    const artSetAllRow = el('div', 'set-all-row');
+    const artSetAllSel = document.createElement('select');
+    artSetAllSel.className = 'crop-select';
+    const artPh = document.createElement('option'); artPh.value = ''; artPh.textContent = '— pick product —';
+    artSetAllSel.appendChild(artPh);
+    availArtisanCrops.forEach(ct => {
+      const opt = document.createElement('option');
+      opt.value = ct.id;
+      opt.textContent = `${CROP_EMOJI[ct.id] ?? '🏺'} ${ct.artisanProduct.name}`;
+      artSetAllSel.appendChild(opt);
+    });
+    const artSetAllBtn = el('button', 'buy-btn set-all-btn', 'Set All Workshops');
+    artSetAllBtn.addEventListener('click', () => {
+      const id = artSetAllSel.value;
+      if (!id) return;
+      unlockedArtisanDefs.forEach(d => engine.assignArtisanProduct(d.name, id));
+      renderAll();
+    });
+    artSetAllRow.appendChild(el('span', 'set-all-label', 'Set all:'));
+    artSetAllRow.appendChild(artSetAllSel);
+    artSetAllRow.appendChild(artSetAllBtn);
+    content.appendChild(artSetAllRow);
+  }
 
   ARTISAN_ZONE_DEFS.forEach(def => {
     const unlocked  = engine.artisanWS.unlockedSet.has(def.name);
