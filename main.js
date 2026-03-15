@@ -327,40 +327,99 @@ function renderMarket() {
 function renderStats() {
   const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
 
+  // ── Crop History ──
   content.appendChild(el('h2', 'section-header', '🌾 Crop History'));
   const table = el('table', 'data-table');
   table.innerHTML = `<thead><tr><th>Crop</th><th>Grown</th><th>Sold</th><th>Lifetime Gold</th></tr></thead>`;
   const tbody = el('tbody');
+
   Object.values(CROPS).forEach(ct => {
-    const s = engine.cropStats.get(ct.id);
-    if (!s || (s.grown === 0 && !ct.isUnlocked(engine.cropStats, lifetimeGold))) return;
-    const row = el('tr');
-    row.innerHTML = `<td>${CROP_EMOJI[ct.id] ?? '🌱'} ${ct.name}</td><td>${shortNumber(s.grown)}</td><td>${shortNumber(s.sold)}</td><td>🪙 ${shortNumber(s.lifetimeSales)}</td>`;
+    const unlocked = ct.isUnlocked(engine.cropStats, lifetimeGold);
+    const s        = engine.cropStats.get(ct.id);
+    const row      = el('tr');
+
+    if (unlocked) {
+      row.innerHTML = `
+        <td>${CROP_EMOJI[ct.id] ?? '🌱'} ${ct.name}</td>
+        <td>${shortNumber(s?.grown ?? 0)}</td>
+        <td>${shortNumber(s?.sold  ?? 0)}</td>
+        <td>🪙 ${shortNumber(s?.lifetimeSales ?? 0)}</td>
+      `;
+    } else {
+      // Show unlock requirements with mini progress bars
+      const { cropId, cropSold, goldEarned } = ct.unlockCriteria;
+      const soldNow  = engine.cropStats.get(cropId)?.sold ?? 0;
+      const soldPct  = Math.min(100, Math.round(soldNow / cropSold * 100));
+      const goldPct  = Math.min(100, Math.round(lifetimeGold / goldEarned * 100));
+      const srcEmoji = CROP_EMOJI[cropId] ?? '🌱';
+      row.classList.add('locked-row');
+      row.innerHTML = `
+        <td>🔒 <span style="color:#666">${ct.name}</span></td>
+        <td colspan="3">
+          <div class="unlock-reqs">
+            <span class="unlock-req">
+              ${srcEmoji} ${shortNumber(soldNow)}<span class="next-sep">/</span>${shortNumber(cropSold)} sold
+              <span class="next-mini-bar"><span class="next-mini-fill" style="width:${soldPct}%"></span></span>
+            </span>
+            <span class="unlock-req">
+              🪙 ${shortNumber(lifetimeGold)}<span class="next-sep">/</span>${shortNumber(goldEarned)} earned
+              <span class="next-mini-bar"><span class="next-mini-fill gold" style="width:${goldPct}%"></span></span>
+            </span>
+          </div>
+        </td>
+      `;
+    }
     tbody.appendChild(row);
   });
+
   table.appendChild(tbody);
   content.appendChild(table);
 
-  content.appendChild(el('h2', 'section-header', '🏺 Artisan History'));
+  // ── Artisan History ──
+  content.appendChild(el('h2', 'section-header', '🏺 Artisan Products'));
   const artTable = el('table', 'data-table');
   artTable.innerHTML = `<thead><tr><th>Product</th><th>Crafted</th><th>Sold</th><th>Lifetime Gold</th></tr></thead>`;
   const atbody = el('tbody');
-  for (const [key, s] of engine.artisanWS.productStats) {
-    if (s.crafted === 0) continue;
-    const cropId = key.replace('_artisan', '');
-    const name   = CROPS[cropId]?.artisanProduct?.name ?? key;
-    const row    = el('tr');
-    row.innerHTML = `<td>🏺 ${name}</td><td>${shortNumber(s.crafted)}</td><td>${shortNumber(s.sold)}</td><td>🪙 ${shortNumber(s.lifetimeSales)}</td>`;
-    atbody.appendChild(row);
-  }
-  if (!atbody.children.length) {
+
+  Object.values(CROPS).forEach(ct => {
+    const ap = ct.artisanProduct;
+    if (!ap) return;
+    const key      = `${ct.id}_artisan`;
+    const soldCount = engine.cropStats.get(ct.id)?.sold ?? 0;
+    const apUnlocked = soldCount >= ap.unlockCropSold;
     const row = el('tr');
-    row.innerHTML = `<td colspan="4" style="color:#666;text-align:center">Nothing produced yet</td>`;
+
+    if (apUnlocked) {
+      const s = engine.artisanWS.productStats.get(key) ?? { crafted: 0, sold: 0, lifetimeSales: 0 };
+      row.innerHTML = `
+        <td>🏺 ${ap.name}</td>
+        <td>${shortNumber(s.crafted)}</td>
+        <td>${shortNumber(s.sold)}</td>
+        <td>🪙 ${shortNumber(s.lifetimeSales)}</td>
+      `;
+    } else {
+      const pct = Math.min(100, Math.round(soldCount / ap.unlockCropSold * 100));
+      const emoji = CROP_EMOJI[ct.id] ?? '🌱';
+      row.classList.add('locked-row');
+      row.innerHTML = `
+        <td>🔒 <span style="color:#666">${ap.name}</span></td>
+        <td colspan="3">
+          <div class="unlock-reqs">
+            <span class="unlock-req">
+              ${emoji} ${shortNumber(soldCount)}<span class="next-sep">/</span>${shortNumber(ap.unlockCropSold)} ${ct.name} sold
+              <span class="next-mini-bar"><span class="next-mini-fill" style="width:${pct}%"></span></span>
+            </span>
+          </div>
+        </td>
+      `;
+    }
     atbody.appendChild(row);
-  }
+  });
+
   artTable.appendChild(atbody);
   content.appendChild(artTable);
 
+  // ── Time Spent ──
   content.appendChild(el('h2', 'section-header', '⏱ Time Spent'));
   const timeGrid = el('div', 'time-grid');
   [

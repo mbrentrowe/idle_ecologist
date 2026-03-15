@@ -243,6 +243,40 @@ body {
 .data-table tr:last-child td { border-bottom: none; }
 .data-table input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
 
+/* ── Locked rows in stats ────────────────────────────────── */
+.locked-row td { opacity: 0.65; font-style: italic; }
+.unlock-reqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.unlock-req {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #aaa;
+}
+.unlock-req .next-mini-bar {
+  display: inline-block;
+  width: 48px;
+  height: 5px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 3px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.unlock-req .next-mini-fill {
+  display: block;
+  height: 100%;
+  background: #6dbd5a;
+  border-radius: 3px;
+}
+.unlock-req .next-mini-fill.gold {
+  background: #e8c94f;
+}
+
 /* ── Stats time grid ─────────────────────────────────────── */
 .time-grid {
   display: grid;
