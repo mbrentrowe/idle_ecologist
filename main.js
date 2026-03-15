@@ -136,7 +136,7 @@ function renderZones() {
       topRow.innerHTML = `
         <span class="zone-emoji">${emoji}</span>
         <span class="zone-name">${def.name}</span>
-        <span class="zone-meta">${ct?.name ?? '—'} · ${def.tileCount} tiles</span>
+        <span class="zone-meta">${ct?.name ?? '—'} · ${def.tileCount} acres</span>
         <span class="zone-gps">🪙 ${shortNumber((ct?.yieldGold ?? 0) * def.tileCount)} / harvest</span>
       `;
       card.appendChild(topRow);
