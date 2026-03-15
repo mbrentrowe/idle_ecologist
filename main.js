@@ -40,11 +40,13 @@ function el(tag, cls, text) {
 
 // Header
 const header = document.getElementById('header');
-const goldEl = el('span', 'gold-amount');
-const gpsEl  = el('span', 'gps');
-const dayEl  = el('span', 'day-counter');
-const actEl  = el('span', 'activity-badge');
+const goldEl    = el('span', 'gold-amount');
+const gpsEl     = el('span', 'gps');
+const dayEl     = el('span', 'day-counter');
+const actEl     = el('span', 'activity-badge');
+const nextCropEl = el('div', 'next-crop-bar');
 [goldEl, gpsEl, dayEl, actEl].forEach(e => header.appendChild(e));
+header.appendChild(nextCropEl);
 
 // Tabs
 const tabBar = document.getElementById('tab-bar');
@@ -80,6 +82,33 @@ function updateHeader() {
             : engine.isSocializingTime() ? '💬 Socializing'
             : '😴 Sleeping';
   actEl.textContent = act;
+
+  // Next crop unlock progress
+  const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
+  const nextCrop = Object.values(CROPS).find(ct => !ct.isUnlocked(engine.cropStats, lifetimeGold));
+  if (!nextCrop || !nextCrop.unlockCriteria) {
+    nextCropEl.textContent = '🏆 All crops unlocked!';
+    nextCropEl.className   = 'next-crop-bar all-unlocked';
+  } else {
+    const { cropId, cropSold, goldEarned } = nextCrop.unlockCriteria;
+    const soldNow  = engine.cropStats.get(cropId)?.sold ?? 0;
+    const soldPct  = Math.min(1, soldNow / cropSold);
+    const goldPct  = Math.min(1, lifetimeGold / goldEarned);
+    const srcEmoji = CROP_EMOJI[cropId] ?? '🌱';
+    const dstEmoji = CROP_EMOJI[nextCrop.id] ?? '🌱';
+    nextCropEl.className = 'next-crop-bar';
+    nextCropEl.innerHTML = `
+      <span class="next-label">🔜 ${dstEmoji} ${nextCrop.name}</span>
+      <span class="next-req">
+        ${srcEmoji} ${shortNumber(soldNow)}<span class="next-sep">/</span>${shortNumber(cropSold)} sold
+        <span class="next-mini-bar"><span class="next-mini-fill" style="width:${Math.round(soldPct*100)}%"></span></span>
+      </span>
+      <span class="next-req">
+        🪙 ${shortNumber(lifetimeGold)}<span class="next-sep">/</span>${shortNumber(goldEarned)}
+        <span class="next-mini-bar"><span class="next-mini-fill gold" style="width:${Math.round(goldPct*100)}%"></span></span>
+      </span>
+    `;
+  }
 }
 
 // ── ZONES TAB ─────────────────────────────────────────────────────────────────

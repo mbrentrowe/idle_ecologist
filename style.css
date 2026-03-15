@@ -26,10 +26,44 @@ body {
   z-index: 100;
 }
 
-.gold-amount { color: #ffd700; font-size: 17px; font-weight: bold; }
-.gps         { color: #7dff7d; font-size: 13px; background: rgba(100,200,100,0.12); padding: 2px 8px; border-radius: 12px; }
-.day-counter { color: #aaa; font-size: 13px; }
+.gold-amount    { color: #ffd700; font-size: 17px; font-weight: bold; }
+.gps            { color: #7dff7d; font-size: 13px; background: rgba(100,200,100,0.12); padding: 2px 8px; border-radius: 12px; }
+.day-counter    { color: #aaa; font-size: 13px; }
 .activity-badge { font-size: 13px; color: #ddd; margin-left: auto; }
+
+/* Next crop unlock bar */
+.next-crop-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 12px;
+  color: #bbb;
+}
+.next-crop-bar.all-unlocked { color: #7dff7d; font-style: italic; }
+.next-label { color: #ffd700; font-weight: bold; margin-right: 4px; }
+.next-req   { display: flex; align-items: center; gap: 4px; }
+.next-sep   { color: #555; }
+.next-mini-bar {
+  display: inline-block;
+  width: 48px;
+  height: 5px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 3px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.next-mini-fill {
+  display: block;
+  height: 100%;
+  background: #7dff7d;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.next-mini-fill.gold { background: #ffd700; }
 
 /* ── Tab bar ─────────────────────────────────────────────── */
 #tab-bar {
