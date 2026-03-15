@@ -9,8 +9,19 @@ export const DAY_REAL_SECS = 240; // 4 real minutes = 1 in-game day
 const SAVE_KEY             = 'idle-ecologist-text-v1';
 
 // ── Zone definitions (no Tiled map needed) ────────────────────────────────────
-export const BASE_ZONE_ACRES = 1;
-export const MAX_ZONE_ACRES  = 20;
+export const BASE_ZONE_ACRES   = 1;
+export const MAX_ZONE_ACRES    = 20;
+export const BASE_ZONE_WORKERS = 1;
+export const MAX_ZONE_WORKERS  = 10;
+
+/** Speed multiplier for a zone with w workers: 1× at 1 worker, 2× at 10. */
+export function workerMultiplier(w) { return 1 + (w - 1) / 9; }
+
+/** Cost to hire the next worker. Scales with current worker count. */
+export function workerUpgradeCost(def, currentWorkers) {
+  const base = Math.max(1000, Math.round(def.cost * 0.1));
+  return Math.round(base * currentWorkers);
+}
 
 export const FARM_ZONE_DEFS = [
   { name: 'Sunflower Patch',    cost:          0 }, // starter, free
@@ -76,10 +87,12 @@ export function createEngine() {
   // ── Farm zones ──────────────────────────────────────────────────────────────
   const STARTER_ZONE = FARM_ZONE_DEFS[0].name;
   const unlockedFarmZones = new Set([STARTER_ZONE]);
-  const zoneCrops  = new Map(); // zoneName → CropInstance
-  const zoneAcres  = new Map(); // zoneName → current acres
+  const zoneCrops   = new Map(); // zoneName → CropInstance
+  const zoneAcres   = new Map(); // zoneName → current acres
+  const zoneWorkers = new Map(); // zoneName → worker count
   zoneCrops.set(STARTER_ZONE, new CropInstance(CROPS.strawberry));
   zoneAcres.set(STARTER_ZONE, BASE_ZONE_ACRES);
+  zoneWorkers.set(STARTER_ZONE, BASE_ZONE_WORKERS);
 
   function farmTileCount(zoneName) {
     return zoneAcres.get(zoneName) ?? BASE_ZONE_ACRES;
@@ -95,8 +108,9 @@ export function createEngine() {
     zoneProductMap:   new Map(),
     productStats:     artisanAct.initProductStats(CROPS),
     productInventory: new Map(),
-    tickTimer:        0,
   };
+  const artisanWorkers = new Map(); // zoneName → worker count
+  const artisanTimers  = new Map(); // zoneName → production timer
 
   // ── Crop state ──────────────────────────────────────────────────────────────
   const cropInventory = new Map();
@@ -250,6 +264,17 @@ export function createEngine() {
         const cur = zoneAcres.get(def.name) ?? BASE_ZONE_ACRES;
         candidates.push({ type: 'acre', name: def.name, cost: acreUpgradeCost(def, cur) });
       }
+      if ((zoneWorkers.get(def.name) ?? BASE_ZONE_WORKERS) < MAX_ZONE_WORKERS) {
+        const cur = zoneWorkers.get(def.name) ?? BASE_ZONE_WORKERS;
+        candidates.push({ type: 'farmWorker', name: def.name, cost: workerUpgradeCost(def, cur) });
+      }
+    }
+    for (const def of ARTISAN_ZONE_DEFS) {
+      if (!artisanWS.unlockedSet.has(def.name)) continue;
+      if ((artisanWorkers.get(def.name) ?? BASE_ZONE_WORKERS) < MAX_ZONE_WORKERS) {
+        const cur = artisanWorkers.get(def.name) ?? BASE_ZONE_WORKERS;
+        candidates.push({ type: 'artisanWorker', name: def.name, cost: workerUpgradeCost(def, cur) });
+      }
     }
     if (candidates.length > 0) {
       const cheapest = candidates.reduce((a, b) => a.cost < b.cost ? a : b);
@@ -258,11 +283,18 @@ export function createEngine() {
         if (cheapest.type === 'farm') {
           unlockedFarmZones.add(cheapest.name);
           zoneAcres.set(cheapest.name, BASE_ZONE_ACRES);
+          zoneWorkers.set(cheapest.name, BASE_ZONE_WORKERS);
           if (bestId) zoneCrops.set(cheapest.name, new CropInstance(CROPS[bestId]));
         } else if (cheapest.type === 'acre') {
           zoneAcres.set(cheapest.name, (zoneAcres.get(cheapest.name) ?? BASE_ZONE_ACRES) + 1);
+        } else if (cheapest.type === 'farmWorker') {
+          zoneWorkers.set(cheapest.name, (zoneWorkers.get(cheapest.name) ?? BASE_ZONE_WORKERS) + 1);
+        } else if (cheapest.type === 'artisanWorker') {
+          artisanWorkers.set(cheapest.name, (artisanWorkers.get(cheapest.name) ?? BASE_ZONE_WORKERS) + 1);
         } else {
           artisanWS.unlockedSet.add(cheapest.name);
+          artisanWorkers.set(cheapest.name, BASE_ZONE_WORKERS);
+          artisanTimers.set(cheapest.name, 0);
           if (bestId) artisanWS.zoneProductMap.set(cheapest.name, bestId);
         }
       }
@@ -280,7 +312,8 @@ export function createEngine() {
     {
       for (const [zoneName, instance] of zoneCrops) {
         if (!unlockedFarmZones.has(zoneName)) continue;
-        instance.tick(gameSpeed);
+        const wm = workerMultiplier(zoneWorkers.get(zoneName) ?? BASE_ZONE_WORKERS);
+        instance.tick(gameSpeed * wm);
         if (instance.isFullyGrown) {
           const id    = instance.cropType.id;
           const tc    = farmTileCount(zoneName);
@@ -299,13 +332,17 @@ export function createEngine() {
       }
     }
 
-    // Artisan production (always active)
-    artisanWS.tickTimer += gameSpeed;
-    if (artisanWS.tickTimer >= artisanAct.productionIntervalSecs) {
-      artisanWS.tickTimer -= artisanAct.productionIntervalSecs;
+    // Artisan production (per-zone timers + worker multiplier)
+    {
       const ctx = buildArtisanCtx();
       for (const zn of artisanWS.unlockedSet) {
-        artisanAct.produce({ name: zn }, ctx);
+        const wm = workerMultiplier(artisanWorkers.get(zn) ?? BASE_ZONE_WORKERS);
+        let t = (artisanTimers.get(zn) ?? 0) + gameSpeed * wm;
+        while (t >= artisanAct.productionIntervalSecs) {
+          t -= artisanAct.productionIntervalSecs;
+          artisanAct.produce({ name: zn }, ctx);
+        }
+        artisanTimers.set(zn, t);
       }
     }
 
@@ -317,7 +354,7 @@ export function createEngine() {
     const MAX_SECS  = 7200;
     const simSecs   = Math.min(realSecs, MAX_SECS);
     const goldBefore = gold.amount;
-    let acc = artisanWS.tickTimer;
+    const simTimers = new Map(artisanTimers);
     let t = 0;
     while (t < simSecs) {
       t++;
@@ -325,7 +362,8 @@ export function createEngine() {
       {
         for (const [zoneName, instance] of zoneCrops) {
           if (!unlockedFarmZones.has(zoneName)) continue;
-          instance.tick(1);
+          const wm = workerMultiplier(zoneWorkers.get(zoneName) ?? BASE_ZONE_WORKERS);
+          instance.tick(wm);
           if (instance.isFullyGrown) {
             const id = instance.cropType.id;
             const tc = farmTileCount(zoneName);
@@ -342,14 +380,18 @@ export function createEngine() {
           }
         }
       }
-      acc++;
-      while (acc >= artisanAct.productionIntervalSecs) {
-        acc -= artisanAct.productionIntervalSecs;
-        const ctx = buildArtisanCtx();
-        for (const zn of artisanWS.unlockedSet) artisanAct.produce({ name: zn }, ctx);
+      const ctx = buildArtisanCtx();
+      for (const zn of artisanWS.unlockedSet) {
+        const wm = workerMultiplier(artisanWorkers.get(zn) ?? BASE_ZONE_WORKERS);
+        let acc = (simTimers.get(zn) ?? 0) + wm;
+        while (acc >= artisanAct.productionIntervalSecs) {
+          acc -= artisanAct.productionIntervalSecs;
+          artisanAct.produce({ name: zn }, ctx);
+        }
+        simTimers.set(zn, acc);
       }
     }
-    artisanWS.tickTimer = acc;
+    for (const [k, v] of simTimers) artisanTimers.set(k, v);
     return { goldEarned: gold.amount - goldBefore, simSecs, capped: realSecs > MAX_SECS };
   }
 
@@ -359,8 +401,11 @@ export function createEngine() {
       gold: gold.amount, gameSpeed, autoPilot,
       calendarAccum, inGameDay,
       unlockedFarmZones: [...unlockedFarmZones],
-      zoneAcres: Object.fromEntries(zoneAcres),
+      zoneAcres:   Object.fromEntries(zoneAcres),
+      zoneWorkers: Object.fromEntries(zoneWorkers),
       unlockedArtisanZones: [...artisanWS.unlockedSet],
+      artisanWorkers: Object.fromEntries(artisanWorkers),
+      artisanTimers:  Object.fromEntries(artisanTimers),
       zoneCrops: Object.fromEntries([...zoneCrops].map(([k, v]) => [k, { cropId: v.cropType.id, phase: v.phase, timer: v.timer }])),
       cropInventory: Object.fromEntries(cropInventory),
       autoSellSet: [...autoSellSet],
@@ -394,14 +439,31 @@ export function createEngine() {
     if (s.zoneAcres) {
       zoneAcres.clear();
       Object.entries(s.zoneAcres).forEach(([k, v]) => zoneAcres.set(k, v));
-      // back-fill any unlocked zones missing from save (e.g. saves before this feature)
       for (const n of unlockedFarmZones) {
         if (!zoneAcres.has(n)) zoneAcres.set(n, BASE_ZONE_ACRES);
+      }
+    }
+    if (s.zoneWorkers) {
+      zoneWorkers.clear();
+      Object.entries(s.zoneWorkers).forEach(([k, v]) => zoneWorkers.set(k, v));
+      for (const n of unlockedFarmZones) {
+        if (!zoneWorkers.has(n)) zoneWorkers.set(n, BASE_ZONE_WORKERS);
       }
     }
     if (Array.isArray(s.unlockedArtisanZones)) {
       artisanWS.unlockedSet.clear();
       s.unlockedArtisanZones.forEach(n => artisanWS.unlockedSet.add(n));
+    }
+    if (s.artisanWorkers) {
+      artisanWorkers.clear();
+      Object.entries(s.artisanWorkers).forEach(([k, v]) => artisanWorkers.set(k, v));
+      for (const n of artisanWS.unlockedSet) {
+        if (!artisanWorkers.has(n)) artisanWorkers.set(n, BASE_ZONE_WORKERS);
+      }
+    }
+    if (s.artisanTimers) {
+      artisanTimers.clear();
+      Object.entries(s.artisanTimers).forEach(([k, v]) => artisanTimers.set(k, v));
     }
     if (s.zoneCrops) {
       zoneCrops.clear();
@@ -437,9 +499,15 @@ export function createEngine() {
     ARTISAN_ZONE_DEFS,
     unlockedFarmZones,
     zoneAcres,
+    zoneWorkers,
     MAX_ZONE_ACRES,
+    MAX_ZONE_WORKERS,
     acreUpgradeCost,
+    workerUpgradeCost,
+    workerMultiplier,
     artisanWS,
+    artisanWorkers,
+    artisanTimers,
     zoneCrops,
     cropInventory,
     autoSellSet,
@@ -455,6 +523,7 @@ export function createEngine() {
       gold.add(-def.cost);
       unlockedFarmZones.add(name);
       zoneAcres.set(name, BASE_ZONE_ACRES);
+      zoneWorkers.set(name, BASE_ZONE_WORKERS);
       const cropId = [...zoneCrops.values()][0]?.cropType.id ?? 'strawberry';
       zoneCrops.set(name, new CropInstance(CROPS[cropId]));
       return true;
@@ -470,11 +539,35 @@ export function createEngine() {
       zoneAcres.set(name, current + 1);
       return true;
     },
+    upgradeZoneWorkers(name) {
+      const def     = FARM_ZONE_DEFS.find(d => d.name === name);
+      const current = zoneWorkers.get(name) ?? BASE_ZONE_WORKERS;
+      if (!def || !unlockedFarmZones.has(name)) return false;
+      if (current >= MAX_ZONE_WORKERS) return false;
+      const cost = workerUpgradeCost(def, current);
+      if (gold.amount < cost) return false;
+      gold.add(-cost);
+      zoneWorkers.set(name, current + 1);
+      return true;
+    },
     unlockArtisanZone(name) {
       const def = ARTISAN_ZONE_DEFS.find(d => d.name === name);
       if (!def || gold.amount < def.cost) return false;
       gold.add(-def.cost);
       artisanWS.unlockedSet.add(name);
+      artisanWorkers.set(name, BASE_ZONE_WORKERS);
+      artisanTimers.set(name, 0);
+      return true;
+    },
+    upgradeArtisanWorkers(name) {
+      const def     = ARTISAN_ZONE_DEFS.find(d => d.name === name);
+      const current = artisanWorkers.get(name) ?? BASE_ZONE_WORKERS;
+      if (!def || !artisanWS.unlockedSet.has(name)) return false;
+      if (current >= MAX_ZONE_WORKERS) return false;
+      const cost = workerUpgradeCost(def, current);
+      if (gold.amount < cost) return false;
+      gold.add(-cost);
+      artisanWorkers.set(name, current + 1);
       return true;
     },
     assignCrop(zoneName, cropId) {

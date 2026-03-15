@@ -1,5 +1,5 @@
 // main.js — UI layer and entry point for Idle Ecologist Text UI
-import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_SECS, MAX_ZONE_ACRES, acreUpgradeCost } from './game.js';
+import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_SECS, MAX_ZONE_ACRES, MAX_ZONE_WORKERS, acreUpgradeCost, workerUpgradeCost, workerMultiplier } from './game.js';
 import { CROPS } from './crops.js';
 
 // ── Crop emoji map ────────────────────────────────────────────────────────────
@@ -169,21 +169,39 @@ function renderZones() {
       card.appendChild(sel);
 
       // Acre upgrade row
-      const currentAcres = engine.zoneAcres.get(def.name) ?? 4;
+      const currentAcres = engine.zoneAcres.get(def.name) ?? 1;
       const acreRow = el('div', 'acre-upgrade-row');
       const acreCost = acreUpgradeCost(def, currentAcres);
       const acreAtMax = currentAcres >= MAX_ZONE_ACRES;
       acreRow.innerHTML = `<span class="acre-label">Acres: <strong>${currentAcres} / ${MAX_ZONE_ACRES}</strong></span>`;
       if (!acreAtMax) {
-        const acreBtn = el('button', 'buy-btn acre-btn', `+1 acre — 🪙 ${shortNumber(acreCost)}`);
+        const acreBtn = el('button', 'buy-btn acre-btn', `+1 acre \u2014 \ud83e\ude99 ${shortNumber(acreCost)}`);
         acreBtn.disabled = engine.gold.amount < acreCost;
         acreBtn.dataset.zoneName = def.name;
         acreBtn.addEventListener('click', () => { engine.upgradeZoneAcres(def.name); renderAll(); });
         acreRow.appendChild(acreBtn);
       } else {
-        acreRow.appendChild(el('span', 'acre-max', '✅ Max'));
+        acreRow.appendChild(el('span', 'acre-max', '\u2705 Max'));
       }
       card.appendChild(acreRow);
+
+      // Worker upgrade row
+      const currentWorkers = engine.zoneWorkers.get(def.name) ?? 1;
+      const workerRow  = el('div', 'acre-upgrade-row');
+      const workerCost = workerUpgradeCost(def, currentWorkers);
+      const mult       = workerMultiplier(currentWorkers);
+      const workerAtMax = currentWorkers >= MAX_ZONE_WORKERS;
+      workerRow.innerHTML = `<span class="acre-label">Workers: <strong>${currentWorkers} / ${MAX_ZONE_WORKERS}</strong> <span style="color:#aaa;font-size:11px">(${mult.toFixed(2)}\u00d7 speed)</span></span>`;
+      if (!workerAtMax) {
+        const wBtn = el('button', 'buy-btn acre-btn worker-btn', `+1 worker \u2014 \ud83e\ude99 ${shortNumber(workerCost)}`);
+        wBtn.disabled = engine.gold.amount < workerCost;
+        wBtn.dataset.zoneNameW = def.name;
+        wBtn.addEventListener('click', () => { engine.upgradeZoneWorkers(def.name); renderAll(); });
+        workerRow.appendChild(wBtn);
+      } else {
+        workerRow.appendChild(el('span', 'acre-max', '\u2705 Max'));
+      }
+      card.appendChild(workerRow);
     }
 
     content.appendChild(card);
@@ -192,8 +210,6 @@ function renderZones() {
   // ── Artisan Workshops ──
   const artHeader = el('h2', 'section-header', '🏺 Artisan Workshops');
   content.appendChild(artHeader);
-
-  const artProgress = engine.artisanWS.tickTimer / engine.artisanWS.act.productionIntervalSecs;
 
   ARTISAN_ZONE_DEFS.forEach(def => {
     const unlocked  = engine.artisanWS.unlockedSet.has(def.name);
@@ -212,6 +228,9 @@ function renderZones() {
       const ct          = cropId ? CROPS[cropId] : null;
       const ap          = ct?.artisanProduct ?? null;
       const apUnlocked  = ap && (engine.cropStats.get(cropId)?.sold ?? 0) >= ap.unlockCropSold;
+      const artProgress = (engine.artisanTimers.get(def.name) ?? 0) / engine.artisanWS.act.productionIntervalSecs;
+      const artWorkers  = engine.artisanWorkers.get(def.name) ?? 1;
+      const artMult     = workerMultiplier(artWorkers);
 
       const topRow = el('div', 'zone-top-row');
       topRow.innerHTML = `
@@ -222,12 +241,10 @@ function renderZones() {
       `;
       card.appendChild(topRow);
 
-      // Progress bar (always render track; fill only if unlocked)
       const barWrap = el('div', 'progress-wrap');
       const bar     = el('div', 'progress-bar amber');
       bar.style.width = apUnlocked ? `${Math.round(artProgress * 100)}%` : '0%';
       barWrap.appendChild(bar);
-
       if (!apUnlocked && ap) {
         const sold     = engine.cropStats.get(cropId)?.sold ?? 0;
         const pctLabel = el('span', 'progress-pct', `${shortNumber(sold)} / ${shortNumber(ap.unlockCropSold)} sold`);
@@ -239,7 +256,6 @@ function renderZones() {
       }
       card.appendChild(barWrap);
 
-      // Product selector (only crops with artisan products that are unlocked)
       const artisanCrops = Object.values(CROPS).filter(c =>
         c.artisanProduct && c.isUnlocked(engine.cropStats, lifetimeGold));
       const sel = makeSelect(
@@ -248,6 +264,22 @@ function renderZones() {
         id => { engine.assignArtisanProduct(def.name, id); renderAll(); }
       );
       card.appendChild(sel);
+
+      // Worker upgrade row
+      const artWorkerAtMax = artWorkers >= MAX_ZONE_WORKERS;
+      const artWorkerCost  = workerUpgradeCost(def, artWorkers);
+      const artWorkerRow   = el('div', 'acre-upgrade-row');
+      artWorkerRow.innerHTML = `<span class="acre-label">Workers: <strong>${artWorkers} / ${MAX_ZONE_WORKERS}</strong> <span style="color:#aaa;font-size:11px">(${artMult.toFixed(2)}× speed)</span></span>`;
+      if (!artWorkerAtMax) {
+        const wBtn = el('button', 'buy-btn acre-btn worker-btn', `+1 worker — 🪙 ${shortNumber(artWorkerCost)}`);
+        wBtn.disabled = engine.gold.amount < artWorkerCost;
+        wBtn.dataset.artZoneNameW = def.name;
+        wBtn.addEventListener('click', () => { engine.upgradeArtisanWorkers(def.name); renderAll(); });
+        artWorkerRow.appendChild(wBtn);
+      } else {
+        artWorkerRow.appendChild(el('span', 'acre-max', '✅ Max'));
+      }
+      card.appendChild(artWorkerRow);
     }
 
     content.appendChild(card);
@@ -501,10 +533,13 @@ function showOfflineToast(result, realSecs) {
 let lastZonesFingerprint = '';
 
 function zonesFingerprint() {
-  const acres = FARM_ZONE_DEFS
+  const farmParts = FARM_ZONE_DEFS
     .filter(d => engine.unlockedFarmZones.has(d.name))
-    .map(d => `${d.name}:${engine.zoneAcres.get(d.name) ?? 1}`).join(',');
-  return `f${engine.unlockedFarmZones.size}|a${engine.artisanWS.unlockedSet.size}|${acres}`;
+    .map(d => `${d.name}:${engine.zoneAcres.get(d.name) ?? 1}:${engine.zoneWorkers.get(d.name) ?? 1}`).join(',');
+  const artParts = ARTISAN_ZONE_DEFS
+    .filter(d => engine.artisanWS.unlockedSet.has(d.name))
+    .map(d => `${d.name}:${engine.artisanWorkers.get(d.name) ?? 1}`).join(',');
+  return `f${engine.unlockedFarmZones.size}|a${engine.artisanWS.unlockedSet.size}|${farmParts}|${artParts}`;
 }
 
 function liveUpdate() {
@@ -516,26 +551,35 @@ function liveUpdate() {
       renderAll();
     } else {
       updateZoneProgressBars();
-      // Patch acre-button disabled states as gold changes
+      // Patch upgrade button disabled states as gold changes
       content.querySelectorAll('.acre-btn[data-zone-name]').forEach(btn => {
         const def = FARM_ZONE_DEFS.find(d => d.name === btn.dataset.zoneName);
         if (!def) return;
         const cur = engine.zoneAcres.get(def.name) ?? 1;
         btn.disabled = engine.gold.amount < acreUpgradeCost(def, cur);
       });
+      content.querySelectorAll('.worker-btn[data-zone-name-w]').forEach(btn => {
+        const def = FARM_ZONE_DEFS.find(d => d.name === btn.dataset.zoneNameW);
+        if (!def) return;
+        const cur = engine.zoneWorkers.get(def.name) ?? 1;
+        btn.disabled = engine.gold.amount < workerUpgradeCost(def, cur);
+      });
+      content.querySelectorAll('.worker-btn[data-art-zone-name-w]').forEach(btn => {
+        const def = ARTISAN_ZONE_DEFS.find(d => d.name === btn.dataset.artZoneNameW);
+        if (!def) return;
+        const cur = engine.artisanWorkers.get(def.name) ?? 1;
+        btn.disabled = engine.gold.amount < workerUpgradeCost(def, cur);
+      });
     }
   }
 }
 
 function updateZoneProgressBars() {
-  const artProgress = engine.artisanWS.tickTimer / engine.artisanWS.act.productionIntervalSecs;
-
   content.querySelectorAll('.zone-card:not(.locked)').forEach((card, i) => {
     const bar    = card.querySelector('.progress-bar');
     const pctEl  = card.querySelector('.progress-pct');
     if (!bar || !pctEl) return;
 
-    // Determine if this is a farm card or artisan card from position
     const allCards = Array.from(content.querySelectorAll('.zone-card'));
     const farmCardCount = FARM_ZONE_DEFS.filter(d => engine.unlockedFarmZones.has(d.name)).length;
     const cardIndex     = allCards.indexOf(card);
@@ -564,10 +608,11 @@ function updateZoneProgressBars() {
       const cropId  = engine.artisanWS.zoneProductMap.get(def.name);
       const ap      = cropId ? CROPS[cropId]?.artisanProduct : null;
       const apUnlocked = ap && (engine.cropStats.get(cropId)?.sold ?? 0) >= ap.unlockCropSold;
+      const artProgress = (engine.artisanTimers.get(def.name) ?? 0) / engine.artisanWS.act.productionIntervalSecs;
       bar.style.width = apUnlocked ? `${Math.round(artProgress * 100)}%` : '0%';
       if (apUnlocked) {
         const inv = engine.artisanWS.productInventory.get(`${cropId}_artisan`) || 0;
-        pctEl.textContent = `${Math.round(artProgress * 100)}% · Inv: ${inv}`;
+        pctEl.textContent = `${Math.round(artProgress * 100)}% \u00b7 Inv: ${inv}`;
       } else if (ap) {
         const sold = engine.cropStats.get(cropId)?.sold ?? 0;
         pctEl.textContent = `${shortNumber(sold)} / ${shortNumber(ap.unlockCropSold)} sold`;
