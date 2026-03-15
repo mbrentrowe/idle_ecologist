@@ -63,7 +63,6 @@ export function createEngine() {
   let   gamePaused   = false;
   let   calendarAccum = 0;
   let   inGameDay    = 1;
-  const schedule     = { farming: 10, socializing: 6, sleeping: 8 };
 
   // ── Farm zones ──────────────────────────────────────────────────────────────
   const unlockedFarmZones = new Set(['FarmZone01']);
@@ -92,17 +91,6 @@ export function createEngine() {
   const autoSellSet   = new Set(Object.keys(CROPS));
   const cropStats     = new Map();
   Object.keys(CROPS).forEach(id => cropStats.set(id, { grown: 0, sold: 0, lifetimeSales: 0 }));
-
-  // ── Time tracking ───────────────────────────────────────────────────────────
-  let totalFarmingHours     = 0;
-  let totalSocializingHours = 0;
-  let totalSleepingHours    = 0;
-
-  // ── Schedule helpers ────────────────────────────────────────────────────────
-  function schedSec(key) { return schedule[key] * (DAY_REAL_SECS / 24); }
-  function isFarmingTime(acc)     { return acc < schedSec('farming'); }
-  function isSocializingTime(acc) { const f = schedSec('farming'); return acc >= f && acc < f + schedSec('socializing'); }
-  function isSleepingTime(acc)    { return !isFarmingTime(acc) && !isSocializingTime(acc); }
 
   // ── Artisan context builder ─────────────────────────────────────────────────
   function buildArtisanCtx() {
@@ -266,16 +254,8 @@ export function createEngine() {
     calendarAccum += gameSpeed;
     if (calendarAccum >= DAY_REAL_SECS) { calendarAccum -= DAY_REAL_SECS; inGameDay++; }
 
-    const farming     = isFarmingTime(calendarAccum);
-    const socializing = isSocializingTime(calendarAccum);
-    const sleeping    = isSleepingTime(calendarAccum);
-    const hpt         = gameSpeed * 24 / DAY_REAL_SECS;
-    if (farming)     totalFarmingHours     += hpt;
-    if (socializing) totalSocializingHours += hpt;
-    if (sleeping)    totalSleepingHours    += hpt;
-
     // Crop growth
-    if (farming) {
+    {
       for (const [zoneName, instance] of zoneCrops) {
         if (!unlockedFarmZones.has(zoneName)) continue;
         instance.tick(gameSpeed);
@@ -320,7 +300,7 @@ export function createEngine() {
     while (t < simSecs) {
       t++;
       calendarAccum = (calendarAccum + 1) % DAY_REAL_SECS;
-      if (isFarmingTime(calendarAccum)) {
+      {
         for (const [zoneName, instance] of zoneCrops) {
           if (!unlockedFarmZones.has(zoneName)) continue;
           instance.tick(1);
@@ -354,7 +334,7 @@ export function createEngine() {
   // ── Save / Load ─────────────────────────────────────────────────────────────
   function getState() {
     return {
-      gold: gold.amount, gameSpeed, autoPilot, schedule: { ...schedule },
+      gold: gold.amount, gameSpeed, autoPilot,
       calendarAccum, inGameDay,
       unlockedFarmZones: [...unlockedFarmZones],
       unlockedArtisanZones: [...artisanWS.unlockedSet],
@@ -365,7 +345,6 @@ export function createEngine() {
       artisanProductMap: Object.fromEntries(artisanWS.zoneProductMap),
       artisanProductStats: Object.fromEntries(artisanWS.productStats),
       artisanInventory: Object.fromEntries(artisanWS.productInventory),
-      totalFarmingHours, totalSocializingHours, totalSleepingHours,
       savedAt: Date.now(),
     };
   }
@@ -384,7 +363,6 @@ export function createEngine() {
     if (typeof s.autoPilot    === 'boolean') autoPilot     = s.autoPilot;
     if (typeof s.calendarAccum === 'number') calendarAccum = s.calendarAccum;
     if (typeof s.inGameDay    === 'number')  inGameDay     = s.inGameDay;
-    if (s.schedule) Object.assign(schedule, s.schedule);
 
     if (Array.isArray(s.unlockedFarmZones)) {
       unlockedFarmZones.clear();
@@ -411,9 +389,6 @@ export function createEngine() {
     if (s.artisanProductMap)  { artisanWS.zoneProductMap.clear();  Object.entries(s.artisanProductMap).forEach(([k, v])  => artisanWS.zoneProductMap.set(k, v)); }
     if (s.artisanProductStats) Object.entries(s.artisanProductStats).forEach(([k, v]) => { if (artisanWS.productStats.has(k)) Object.assign(artisanWS.productStats.get(k), v); });
     if (s.artisanInventory)  { artisanWS.productInventory.clear(); Object.entries(s.artisanInventory).forEach(([k, v])  => artisanWS.productInventory.set(k, v)); }
-    if (typeof s.totalFarmingHours     === 'number') totalFarmingHours     = s.totalFarmingHours;
-    if (typeof s.totalSocializingHours === 'number') totalSocializingHours = s.totalSocializingHours;
-    if (typeof s.totalSleepingHours    === 'number') totalSleepingHours    = s.totalSleepingHours;
   }
 
   function clearSave() { localStorage.removeItem(SAVE_KEY); }
@@ -426,7 +401,6 @@ export function createEngine() {
     get autoPilot()    { return autoPilot;    },
     get calendarAccum(){ return calendarAccum; },
     get inGameDay()    { return inGameDay;     },
-    schedule,
     CROPS,
     FARM_ZONE_DEFS,
     ARTISAN_ZONE_DEFS,
@@ -438,15 +412,8 @@ export function createEngine() {
     cropStats,
 
     // Computed
-    isFarmingTime:     () => isFarmingTime(calendarAccum),
-    isSocializingTime: () => isSocializingTime(calendarAccum),
-    isSleepingTime:    () => isSleepingTime(calendarAccum),
     getTotalGPS,
     cropEffectiveGPS,
-    get totalFarmingHours()     { return totalFarmingHours;     },
-    get totalSocializingHours() { return totalSocializingHours; },
-    get totalSleepingHours()    { return totalSleepingHours;    },
-
     // Mutations (called from UI)
     unlockFarmZone(name) {
       const def = FARM_ZONE_DEFS.find(d => d.name === name);
@@ -475,7 +442,6 @@ export function createEngine() {
     setAutoSell(key, value)  { if (value) autoSellSet.add(key); else autoSellSet.delete(key); },
     setGameSpeed(v)          { gameSpeed = v; },
     setAutoPilot(v)          { autoPilot = v; },
-    setScheduleHours(key, v) { schedule[key] = v; },
 
     // Engine lifecycle
     tick,

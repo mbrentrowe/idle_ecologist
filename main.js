@@ -27,7 +27,7 @@ setInterval(() => engine.tick(), 250);
 setInterval(() => engine.save(), 10000);
 
 // ── Tab state ─────────────────────────────────────────────────────────────────
-const TABS = ['zones', 'market', 'stats', 'schedule', 'settings'];
+const TABS = ['zones', 'market', 'stats', 'settings'];
 let activeTab = 'zones';
 
 // ── UI Construction ───────────────────────────────────────────────────────────
@@ -43,9 +43,8 @@ const header = document.getElementById('header');
 const goldEl    = el('span', 'gold-amount');
 const gpsEl     = el('span', 'gps');
 const dayEl     = el('span', 'day-counter');
-const actEl     = el('span', 'activity-badge');
 const nextCropEl = el('div', 'next-crop-bar');
-[goldEl, gpsEl, dayEl, actEl].forEach(e => header.appendChild(e));
+[goldEl, gpsEl, dayEl].forEach(e => header.appendChild(e));
 header.appendChild(nextCropEl);
 
 // Tabs
@@ -68,7 +67,6 @@ function renderAll() {
     case 'zones':    renderZones();    break;
     case 'market':   renderMarket();   break;
     case 'stats':    renderStats();    break;
-    case 'schedule': renderSchedule(); break;
     case 'settings': renderSettings(); break;
   }
 }
@@ -78,10 +76,6 @@ function updateHeader() {
   goldEl.textContent = `🪙 ${shortNumber(engine.gold.amount)}`;
   gpsEl.textContent  = `+${shortNumber(engine.getTotalGPS() * engine.gameSpeed)}/s`;
   dayEl.textContent  = `Day ${engine.inGameDay}`;
-  const act = engine.isFarmingTime()     ? '🌾 Farming'
-            : engine.isSocializingTime() ? '💬 Socializing'
-            : '😴 Sleeping';
-  actEl.textContent = act;
 
   // Next crop unlock progress
   const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
@@ -419,87 +413,6 @@ function renderStats() {
   artTable.appendChild(atbody);
   content.appendChild(artTable);
 
-  // ── Time Spent ──
-  content.appendChild(el('h2', 'section-header', '⏱ Time Spent'));
-  const timeGrid = el('div', 'time-grid');
-  [
-    ['🌾', 'Farming',     engine.totalFarmingHours,     '#6dbd5a'],
-    ['💬', 'Socializing', engine.totalSocializingHours, '#5ab5bd'],
-    ['😴', 'Sleeping',    engine.totalSleepingHours,    '#9a7fc7'],
-  ].forEach(([icon, label, hours, colour]) => {
-    const card = el('div', 'time-card');
-    card.style.borderColor = colour + '44';
-    card.innerHTML = `<div style="font-size:22px">${icon}</div><div style="color:${colour};font-weight:bold">${label}</div><div style="font-size:18px;font-weight:bold">${hours.toFixed(1)}h</div>`;
-    timeGrid.appendChild(card);
-  });
-  content.appendChild(timeGrid);
-}
-
-// ── SCHEDULE TAB ──────────────────────────────────────────────────────────────
-function renderSchedule() {
-  const TOTAL = 24;
-  content.appendChild(el('h2', 'section-header', '📅 Daily Schedule'));
-
-  const desc = el('p', 'schedule-desc', 'Allocate 24 hours across the three daily activities. Crops only grow during Farming hours.');
-  content.appendChild(desc);
-
-  const activities = [
-    { key: 'farming',     label: 'Farming',     icon: '🌾', color: '#6dbd5a' },
-    { key: 'socializing', label: 'Socializing', icon: '💬', color: '#5ab5bd' },
-    { key: 'sleeping',    label: 'Sleeping',    icon: '😴', color: '#9a7fc7' },
-  ];
-
-  // Visual bar
-  const barWrap = el('div', 'sched-bar-wrap');
-  activities.forEach(a => {
-    const seg = el('div', 'sched-bar-seg');
-    seg.style.background = a.color;
-    seg.style.width = `${(engine.schedule[a.key] / TOTAL) * 100}%`;
-    barWrap.appendChild(seg);
-  });
-  content.appendChild(barWrap);
-
-  // Sliders
-  activities.forEach(a => {
-    const row = el('div', 'sched-row');
-    row.innerHTML = `<span class="sched-icon">${a.icon}</span><span class="sched-label" style="color:${a.color}">${a.label}</span>`;
-    const slider = document.createElement('input');
-    slider.type = 'range'; slider.min = '0'; slider.max = '24'; slider.step = '0.5';
-    slider.value = engine.schedule[a.key];
-    slider.className = 'sched-slider';
-
-    const valEl = el('span', 'sched-val', `${Math.round(engine.schedule[a.key])}h`);
-
-    slider.addEventListener('input', () => {
-      const newVal = parseFloat(slider.value);
-      const others = activities.filter(b => b.key !== a.key);
-      const oldOtherTotal = others.reduce((s, b) => s + engine.schedule[b.key], 0);
-      const remaining = TOTAL - newVal;
-      engine.setScheduleHours(a.key, newVal);
-      if (remaining <= 0) {
-        others.forEach(b => engine.setScheduleHours(b.key, 0));
-      } else if (oldOtherTotal <= 0) {
-        others.forEach(b => engine.setScheduleHours(b.key, remaining / others.length));
-      } else {
-        others.forEach(b => engine.setScheduleHours(b.key, (engine.schedule[b.key] / oldOtherTotal) * remaining));
-      }
-      // Reconcile rounding
-      const total = activities.reduce((s, b) => s + engine.schedule[b.key], 0);
-      const diff = TOTAL - total;
-      if (Math.abs(diff) > 0.001) {
-        const last = others[others.length - 1];
-        engine.setScheduleHours(last.key, Math.max(0, engine.schedule[last.key] + diff));
-      }
-      renderAll();
-    });
-
-    row.appendChild(slider);
-    row.appendChild(valEl);
-    content.appendChild(row);
-  });
-
-  const totalRow = el('p', 'sched-total', `Total: ${activities.reduce((s, a) => s + engine.schedule[a.key], 0).toFixed(1)} / 24h`);
-  content.appendChild(totalRow);
 }
 
 // ── SETTINGS TAB ─────────────────────────────────────────────────────────────
