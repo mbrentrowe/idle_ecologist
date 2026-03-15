@@ -245,6 +245,17 @@ body {
 .set-all-row .crop-select { flex: 1; }
 .set-all-btn { white-space: nowrap; flex-shrink: 0; }
 
+/* ── Crop sprite icons ───────────────────────────────────── */
+.crop-icon {
+  display: inline-block;
+  background-image: url('./assets/IdleEcologistMasterSpriteSheet.png');
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.crop-icon-fallback { vertical-align: middle; font-size: 14px; }
+
 .action-btn.danger { border-color: rgba(255,80,80,0.4); background: rgba(255,80,80,0.08); color: #ff6060; }
 .action-btn.danger:hover { background: rgba(255,80,80,0.18); }
 

@@ -3,11 +3,32 @@ import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_
 import { CROPS } from './crops.js';
 
 // ── Crop emoji map ────────────────────────────────────────────────────────────
+// Used only in <select> option text (HTML not supported there)
 const CROP_EMOJI = {
   strawberry:  '🍓', greenOnion: '🌿', potato:     '🥔', onion:      '🧅',
   carrot:      '🥕', blueberry:  '🫐', parsnip:    '🟤', lettuce:    '🥬',
   cauliflower: '🥦', rice:       '🍚', broccoli:   '🌾', asparagus:  '🌱',
 };
+
+// Tileset GIDs → CSS sprite icons (marketIconGID from canvas crops.js)
+// Sheet: 125 cols × 16 px tiles, 2000 × 1568 px
+const CROP_ICON_GID = {
+  strawberry:  4486, greenOnion: 4736, potato:     4986, onion:      5236,
+  carrot:      5486, blueberry:  5736, parsnip:    5986, lettuce:    6236,
+  cauliflower: 6486, rice:       6736, broccoli:   6986, asparagus:  7236,
+};
+const _SHEET = { cols: 125, tile: 16, w: 2000, h: 1568 };
+function cropIconHtml(gid, size = 24) {
+  if (!gid) return '<span class="crop-icon-fallback">?</span>';
+  const scale = size / _SHEET.tile;
+  const col   = (gid - 1) % _SHEET.cols;
+  const row   = Math.floor((gid - 1) / _SHEET.cols);
+  const px    = Math.round(col * size);
+  const py    = Math.round(row * size);
+  const bw    = Math.round(_SHEET.w * scale);
+  const bh    = Math.round(_SHEET.h * scale);
+  return `<span class="crop-icon" style="width:${size}px;height:${size}px;background-position:-${px}px -${py}px;background-size:${bw}px ${bh}px"></span>`;
+}
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 const engine = createEngine();
@@ -102,8 +123,8 @@ function updateHeader() {
     const soldNow  = engine.cropStats.get(cropId)?.sold ?? 0;
     const soldPct  = Math.min(1, soldNow / cropSold);
     const goldPct  = Math.min(1, lifetimeGold / goldEarned);
-    const srcEmoji = CROP_EMOJI[cropId] ?? '🌱';
-    const dstEmoji = CROP_EMOJI[nextCrop.id] ?? '🌱';
+    const srcEmoji = cropIconHtml(CROP_ICON_GID[cropId], 16);
+    const dstEmoji = cropIconHtml(CROP_ICON_GID[nextCrop.id], 16);
     nextCropEl.className = 'next-crop-bar';
     nextCropEl.innerHTML = `
       <span class="next-label">🔜 ${dstEmoji} ${nextCrop.name}</span>
@@ -171,12 +192,12 @@ function renderZones() {
       const instance = engine.zoneCrops.get(def.name);
       const ct       = instance?.cropType;
       const progress = instance?.overallProgress ?? 0;
-      const emoji    = ct ? (CROP_EMOJI[ct.id] ?? '🌱') : '—';
+      const cropIconEl = ct ? cropIconHtml(CROP_ICON_GID[ct.id]) : '<span style="color:#666;font-size:18px">—</span>';
 
-      // Top row: emoji + name + tiles + GPS
+      // Top row: icon + name + tiles + GPS
       const topRow = el('div', 'zone-top-row');
       topRow.innerHTML = `
-        <span class="zone-emoji">${emoji}</span>
+        ${cropIconEl}
         <span class="zone-name">${def.name}</span>
         <span class="zone-meta">${ct?.name ?? '—'} · ${engine.zoneAcres.get(def.name) ?? 4} acres</span>
         <span class="zone-gps">🪙 ${shortNumber((ct?.yieldGold ?? 0) * (engine.zoneAcres.get(def.name) ?? 4))} / harvest</span>
@@ -304,7 +325,7 @@ function renderZones() {
 
       const topRow = el('div', 'zone-top-row');
       topRow.innerHTML = `
-        <span class="zone-emoji">🏺</span>
+        ${cropId && apUnlocked ? cropIconHtml(CROP_ICON_GID[cropId]) : '<span class="zone-emoji">🏺</span>'}
         <span class="zone-name">${def.name}</span>
         <span class="zone-meta">${apUnlocked ? ap.name : (ap ? '⏳ Unlocking…' : '— unassigned —')}</span>
         ${apUnlocked ? `<span class="zone-gps">🪙 ${shortNumber(ap.goldValue)} / batch</span>` : ''}
@@ -392,7 +413,7 @@ function renderMarket() {
     const auto = engine.autoSellSet.has(ct.id);
     const row  = el('tr');
     row.innerHTML = `
-      <td>${CROP_EMOJI[ct.id] ?? '🌱'} ${ct.name}</td>
+      <td>${cropIconHtml(CROP_ICON_GID[ct.id], 20)} ${ct.name}</td>
       <td>${shortNumber(inv)}</td>
       <td></td>
       <td>${shortNumber(gps)}/s</td>
@@ -453,7 +474,7 @@ function renderStats() {
 
     if (unlocked) {
       row.innerHTML = `
-        <td>${CROP_EMOJI[ct.id] ?? '🌱'} ${ct.name}</td>
+        <td>${cropIconHtml(CROP_ICON_GID[ct.id], 20)} ${ct.name}</td>
         <td>${shortNumber(s?.grown ?? 0)}</td>
         <td>${shortNumber(s?.sold  ?? 0)}</td>
         <td>🪙 ${shortNumber(s?.lifetimeSales ?? 0)}</td>
@@ -464,7 +485,7 @@ function renderStats() {
       const soldNow  = engine.cropStats.get(cropId)?.sold ?? 0;
       const soldPct  = Math.min(100, Math.round(soldNow / cropSold * 100));
       const goldPct  = Math.min(100, Math.round(lifetimeGold / goldEarned * 100));
-      const srcEmoji = CROP_EMOJI[cropId] ?? '🌱';
+      const srcEmoji = cropIconHtml(CROP_ICON_GID[cropId], 16);
       row.classList.add('locked-row');
       row.innerHTML = `
         <td>🔒 <span style="color:#666">${ct.name}</span></td>
@@ -512,7 +533,7 @@ function renderStats() {
       `;
     } else {
       const pct = Math.min(100, Math.round(soldCount / ap.unlockCropSold * 100));
-      const emoji = CROP_EMOJI[ct.id] ?? '🌱';
+      const emoji = cropIconHtml(CROP_ICON_GID[ct.id], 16);
       row.classList.add('locked-row');
       row.innerHTML = `
         <td>🔒 <span style="color:#666">${ap.name}</span></td>
