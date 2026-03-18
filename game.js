@@ -22,21 +22,18 @@ export function workerUpgradeCost(def, currentWorkers) {
 }
 
 export const FARM_ZONE_DEFS = [
-  { name: 'Sunflower Patch',    cost:          0 }, // starter, free
-  { name: 'Clover Corner',      cost:      10000 },
-  { name: 'Buttercup Field',    cost:      20000 },
-  { name: 'Willowbrook Plot',   cost:      30000 },
-  { name: 'Mossy Hollow',       cost:      50000 },
-  { name: 'Foxglove Run',       cost:      70000 },
-  { name: 'Hawthorn Strip',     cost:     100000 },
-  { name: 'Ember Meadow',       cost:     150000 },
-  { name: 'Brackenfold',        cost:     200000 },
-  { name: 'Ironwood Terrace',   cost:     300000 },
-  { name: 'Stonegate Field',    cost:     500000 },
-  { name: 'Copperleaf Plot',    cost:     750000 },
-  { name: 'Silverbrook Acre',   cost:    1000000 },
-  { name: 'Thornfield Rise',    cost:    1500000 },
-  { name: 'The Grand Flat',     cost:    2000000 },
+  { name: 'Sunflower Patch',    cropId: 'strawberry',   cost:          0 }, // starter
+  { name: 'Clover Corner',      cropId: 'greenOnion',   cost:      10000 },
+  { name: 'Buttercup Field',    cropId: 'potato',       cost:      20000 },
+  { name: 'Willowbrook Plot',   cropId: 'onion',        cost:      30000 },
+  { name: 'Mossy Hollow',       cropId: 'carrot',       cost:      50000 },
+  { name: 'Foxglove Run',       cropId: 'blueberry',    cost:      70000 },
+  { name: 'Hawthorn Strip',     cropId: 'parsnip',      cost:     100000 },
+  { name: 'Ember Meadow',       cropId: 'lettuce',      cost:     150000 },
+  { name: 'Brackenfold',        cropId: 'cauliflower',  cost:     200000 },
+  { name: 'Ironwood Terrace',   cropId: 'rice',         cost:     300000 },
+  { name: 'Stonegate Field',    cropId: 'broccoli',     cost:     500000 },
+  { name: 'Copperleaf Plot',    cropId: 'asparagus',    cost:     750000 },
 ];
 
 /** Cost to buy one extra acre in a given zone. Scales with how many acres already owned. */
@@ -46,16 +43,18 @@ export function acreUpgradeCost(def, currentAcres) {
 }
 
 export const ARTISAN_ZONE_DEFS = [
-  { name: 'The Potting Shed',         cost:       75000 },
-  { name: 'Oakwood Workshop',         cost:      225000 },
-  { name: 'Hearthside Cellar',        cost:      675000 },
-  { name: 'Millstone Hall',           cost:     2025000 },
-  { name: 'The Smokehouse',           cost:     6075000 },
-  { name: 'Coppergate Works',         cost:    18225000 },
-  { name: 'Ironbell Distillery',      cost:    54675000 },
-  { name: 'Harvestmoon Press',        cost:   164025000 },
-  { name: 'The Grand Cooperage',      cost:   492075000 },
-  { name: "Elder & Sons Manufactory", cost:  1476225000 },
+  { name: 'The Potting Shed',         cropId: 'strawberry',   cost:        75000 },
+  { name: 'Oakwood Workshop',         cropId: 'greenOnion',   cost:       225000 },
+  { name: 'Hearthside Cellar',        cropId: 'potato',       cost:       675000 },
+  { name: 'Millstone Hall',           cropId: 'onion',        cost:      2025000 },
+  { name: 'The Smokehouse',           cropId: 'carrot',       cost:      6075000 },
+  { name: 'Coppergate Works',         cropId: 'blueberry',    cost:     18225000 },
+  { name: 'Ironbell Distillery',      cropId: 'parsnip',      cost:     54675000 },
+  { name: 'Harvestmoon Press',        cropId: 'lettuce',      cost:    164025000 },
+  { name: 'The Grand Cooperage',      cropId: 'cauliflower',  cost:    492075000 },
+  { name: "Elder & Sons Manufactory", cropId: 'rice',         cost:   1476225000 },
+  { name: 'Stonebridge Fermentary',   cropId: 'broccoli',     cost:   4428675000 },
+  { name: 'The Celestial Vault',      cropId: 'asparagus',    cost:  13286025000 },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -83,14 +82,10 @@ export function createEngine() {
   let   inGameDay    = 1;
 
   // ── Farm zones ──────────────────────────────────────────────────────────────
-  const STARTER_ZONE = FARM_ZONE_DEFS[0].name;
-  const unlockedFarmZones = new Set([STARTER_ZONE]);
+  const unlockedFarmZones = new Set(); // populated by checkAutoUnlocks()
   const zoneCrops   = new Map(); // zoneName → CropInstance
   const zoneAcres   = new Map(); // zoneName → current acres
   const zoneWorkers = new Map(); // zoneName → worker count
-  zoneCrops.set(STARTER_ZONE, new CropInstance(CROPS.strawberry));
-  zoneAcres.set(STARTER_ZONE, BASE_ZONE_ACRES);
-  zoneWorkers.set(STARTER_ZONE, BASE_ZONE_WORKERS);
 
   function farmTileCount(zoneName) {
     return zoneAcres.get(zoneName) ?? BASE_ZONE_ACRES;
@@ -129,6 +124,35 @@ export function createEngine() {
     };
   }
 
+  // ── Auto-unlock: criteria-based zone activation ──────────────────────────────
+  function checkAutoUnlocks() {
+    const lifetimeGold = Array.from(cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
+    for (const def of FARM_ZONE_DEFS) {
+      if (unlockedFarmZones.has(def.name)) continue;
+      const crop = CROPS[def.cropId];
+      if (!crop) continue;
+      if (crop.isUnlocked(cropStats, lifetimeGold)) {
+        unlockedFarmZones.add(def.name);
+        if (!zoneAcres.has(def.name))   zoneAcres.set(def.name, BASE_ZONE_ACRES);
+        if (!zoneWorkers.has(def.name)) zoneWorkers.set(def.name, BASE_ZONE_WORKERS);
+        if (!zoneCrops.has(def.name))   zoneCrops.set(def.name, new CropInstance(crop));
+      }
+    }
+    for (const def of ARTISAN_ZONE_DEFS) {
+      const crop = CROPS[def.cropId];
+      if (!crop?.artisanProduct) continue;
+      if (artisanWS.unlockedSet.has(def.name)) {
+        // Zone already unlocked — keep product map correct after load/migration
+        artisanWS.zoneProductMap.set(def.name, def.cropId);
+      } else if ((cropStats.get(def.cropId)?.sold ?? 0) >= crop.artisanProduct.unlockCropSold) {
+        artisanWS.unlockedSet.add(def.name);
+        artisanWS.zoneProductMap.set(def.name, def.cropId);
+        if (!artisanWorkers.has(def.name)) artisanWorkers.set(def.name, BASE_ZONE_WORKERS);
+      }
+    }
+  }
+  checkAutoUnlocks(); // unlock starter zone (strawberry has no criteria)
+
   // ── GPS helpers ─────────────────────────────────────────────────────────────
   /** Current GPS for one crop (respects artisan routing). */
   function cropEffectiveGPS(cropId) {
@@ -144,29 +168,6 @@ export function createEngine() {
       }
     }
     return ct.yieldGold / cycleTime;
-  }
-
-  /** Projected GPS over 600-second horizon, weighing artisan unlock grind cost. */
-  function projectedCropGPS(cropId) {
-    const ct = CROPS[cropId];
-    if (!ct) return 0;
-    const cycleTime = (ct.growthPhaseGIDs.length - 1) * ct.growthTimePerPhase;
-    if (cycleTime <= 0) return 0;
-    const rawGPS = ct.yieldGold / cycleTime;
-    const ap = ct.artisanProduct;
-    if (!ap) return rawGPS;
-    const hasWorkshop = [...artisanWS.unlockedSet].some(zn => artisanWS.zoneProductMap.get(zn) === cropId);
-    if (!hasWorkshop) return rawGPS;
-    const soldCount = cropStats.get(cropId)?.sold ?? 0;
-    const apGPS = (ap.goldValue / ap.cropInputCount) / cycleTime;
-    if (soldCount >= ap.unlockCropSold) return apGPS;
-    const totalTiles = FARM_ZONE_DEFS.filter(d => unlockedFarmZones.has(d.name)).reduce((s, d) => s + (zoneAcres.get(d.name) ?? BASE_ZONE_ACRES), 0);
-    const soldPerSec = totalTiles / cycleTime;
-    if (soldPerSec <= 0) return rawGPS;
-    const unlockTime = (ap.unlockCropSold - soldCount) / soldPerSec;
-    const HORIZON = 600;
-    if (unlockTime >= HORIZON) return rawGPS;
-    return (rawGPS * unlockTime + apGPS * (HORIZON - unlockTime)) / HORIZON;
   }
 
   /** Total gold-per-second across all zones (used in header). */
@@ -195,33 +196,17 @@ export function createEngine() {
   }
 
   // ── Auto-pilot ──────────────────────────────────────────────────────────────
-  function bestUnlockedCropId() {
-    const lifetimeGold = Array.from(cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
-    let bestId = null, bestGPS = -1;
-    for (const [id, ct] of Object.entries(CROPS)) {
-      if (!ct.isUnlocked(cropStats, lifetimeGold)) continue;
-      const gps = projectedCropGPS(id);
-      if (gps > bestGPS) { bestGPS = gps; bestId = id; }
-    }
-    return bestId;
-  }
-
   function runAutoPilot() {
     if (!autoPilot) return;
-    const bestId = bestUnlockedCropId();
 
-    // 1. SELL ROUTING
-    const holdRawSet = new Set();
-    for (const zn of artisanWS.unlockedSet) {
-      const cid = artisanWS.zoneProductMap.get(zn);
-      if (!cid) continue;
-      const ap = CROPS[cid]?.artisanProduct;
-      if (ap && (cropStats.get(cid)?.sold ?? 0) >= ap.unlockCropSold) holdRawSet.add(cid);
-    }
+    // 1. SELL ROUTING — route crop to artisan when its workshop is unlocked
     for (const cropId of Object.keys(CROPS)) {
       const ap   = CROPS[cropId]?.artisanProduct;
       const aKey = ap ? `${cropId}_artisan` : null;
-      if (holdRawSet.has(cropId)) {
+      const hasUnlockedWorkshop = ARTISAN_ZONE_DEFS.some(
+        d => d.cropId === cropId && artisanWS.unlockedSet.has(d.name));
+      const apUnlocked = ap && (cropStats.get(cropId)?.sold ?? 0) >= ap.unlockCropSold;
+      if (hasUnlockedWorkshop && apUnlocked) {
         autoSellSet.delete(cropId);
         if (aKey) autoSellSet.add(aKey);
       } else {
@@ -230,36 +215,12 @@ export function createEngine() {
       }
     }
 
-    // 2. WORKSHOP ASSIGN
-    if (bestId) {
-      for (const zn of artisanWS.unlockedSet) {
-        artisanWS.zoneProductMap.set(zn, bestId);
-      }
-    }
-
-    // 3. CROP SWAP
-    if (bestId) {
-      for (const [zoneName, instance] of zoneCrops) {
-        if (instance.cropType.id !== bestId) {
-          zoneCrops.set(zoneName, new CropInstance(CROPS[bestId]));
-        }
-      }
-    }
-
-    // 4. AUTO-BUY — cheapest available upgrade
+    // 2. AUTO-BUY — cheapest available upgrade (acres and workers only)
     const candidates = [];
-    for (const def of FARM_ZONE_DEFS) {
-      if (!unlockedFarmZones.has(def.name) && def.cost > 0)
-        candidates.push({ type: 'farm', name: def.name, cost: def.cost });
-    }
-    for (const def of ARTISAN_ZONE_DEFS) {
-      if (!artisanWS.unlockedSet.has(def.name))
-        candidates.push({ type: 'artisan', name: def.name, cost: def.cost });
-    }
     for (const def of FARM_ZONE_DEFS) {
       if (!unlockedFarmZones.has(def.name)) continue;
       const curAcres = zoneAcres.get(def.name) ?? BASE_ZONE_ACRES;
-      candidates.push({ type: 'acre', name: def.name, cost: acreUpgradeCost(def, curAcres) });
+      candidates.push({ type: 'acre',       name: def.name, cost: acreUpgradeCost(def, curAcres) });
       const curFW = zoneWorkers.get(def.name) ?? BASE_ZONE_WORKERS;
       candidates.push({ type: 'farmWorker', name: def.name, cost: workerUpgradeCost(def, curFW) });
     }
@@ -272,22 +233,12 @@ export function createEngine() {
       const cheapest = candidates.reduce((a, b) => a.cost < b.cost ? a : b);
       if (gold.amount >= cheapest.cost) {
         gold.add(-cheapest.cost);
-        if (cheapest.type === 'farm') {
-          unlockedFarmZones.add(cheapest.name);
-          zoneAcres.set(cheapest.name, BASE_ZONE_ACRES);
-          zoneWorkers.set(cheapest.name, BASE_ZONE_WORKERS);
-          if (bestId) zoneCrops.set(cheapest.name, new CropInstance(CROPS[bestId]));
-        } else if (cheapest.type === 'acre') {
+        if (cheapest.type === 'acre') {
           zoneAcres.set(cheapest.name, (zoneAcres.get(cheapest.name) ?? BASE_ZONE_ACRES) + 1);
         } else if (cheapest.type === 'farmWorker') {
           zoneWorkers.set(cheapest.name, (zoneWorkers.get(cheapest.name) ?? BASE_ZONE_WORKERS) + 1);
-        } else if (cheapest.type === 'artisanWorker') {
-          artisanWorkers.set(cheapest.name, (artisanWorkers.get(cheapest.name) ?? BASE_ZONE_WORKERS) + 1);
         } else {
-          artisanWS.unlockedSet.add(cheapest.name);
-          artisanWorkers.set(cheapest.name, BASE_ZONE_WORKERS);
-          artisanTimers.set(cheapest.name, 0);
-          if (bestId) artisanWS.zoneProductMap.set(cheapest.name, bestId);
+          artisanWorkers.set(cheapest.name, (artisanWorkers.get(cheapest.name) ?? BASE_ZONE_WORKERS) + 1);
         }
       }
     }
@@ -339,6 +290,7 @@ export function createEngine() {
     }
 
     runAutoPilot();
+    checkAutoUnlocks();
   }
 
   // ── Offline simulation ──────────────────────────────────────────────────────
@@ -460,7 +412,8 @@ export function createEngine() {
     if (s.zoneCrops) {
       zoneCrops.clear();
       Object.entries(s.zoneCrops).forEach(([name, zc]) => {
-        const ct = CROPS[zc.cropId];
+        const def = FARM_ZONE_DEFS.find(d => d.name === name);
+        const ct  = CROPS[def?.cropId ?? zc.cropId]; // always use zone's bound crop
         if (!ct) return;
         const inst = new CropInstance(ct);
         inst.phase = zc.phase ?? 0;
@@ -471,9 +424,9 @@ export function createEngine() {
     if (s.cropInventory)    { cropInventory.clear();    Object.entries(s.cropInventory).forEach(([k, v])    => cropInventory.set(k, v)); }
     if (Array.isArray(s.autoSellSet)) { autoSellSet.clear(); s.autoSellSet.forEach(k => autoSellSet.add(k)); }
     if (s.cropStats)         Object.entries(s.cropStats).forEach(([id, cs])   => { if (cropStats.has(id))               Object.assign(cropStats.get(id), cs); });
-    if (s.artisanProductMap)  { artisanWS.zoneProductMap.clear();  Object.entries(s.artisanProductMap).forEach(([k, v])  => artisanWS.zoneProductMap.set(k, v)); }
     if (s.artisanProductStats) Object.entries(s.artisanProductStats).forEach(([k, v]) => { if (artisanWS.productStats.has(k)) Object.assign(artisanWS.productStats.get(k), v); });
     if (s.artisanInventory)  { artisanWS.productInventory.clear(); Object.entries(s.artisanInventory).forEach(([k, v])  => artisanWS.productInventory.set(k, v)); }
+    checkAutoUnlocks(); // re-derive zoneProductMap and catch any new unlocks
   }
 
   function clearSave() { localStorage.removeItem(SAVE_KEY); }
@@ -509,17 +462,6 @@ export function createEngine() {
     getTotalGPS,
     cropEffectiveGPS,
     // Mutations (called from UI)
-    unlockFarmZone(name) {
-      const def = FARM_ZONE_DEFS.find(d => d.name === name);
-      if (!def || gold.amount < def.cost) return false;
-      gold.add(-def.cost);
-      unlockedFarmZones.add(name);
-      zoneAcres.set(name, BASE_ZONE_ACRES);
-      zoneWorkers.set(name, BASE_ZONE_WORKERS);
-      const cropId = [...zoneCrops.values()][0]?.cropType.id ?? 'strawberry';
-      zoneCrops.set(name, new CropInstance(CROPS[cropId]));
-      return true;
-    },
     upgradeZoneAcres(name) {
       const def     = FARM_ZONE_DEFS.find(d => d.name === name);
       const current = zoneAcres.get(name) ?? BASE_ZONE_ACRES;
@@ -540,15 +482,6 @@ export function createEngine() {
       zoneWorkers.set(name, current + 1);
       return true;
     },
-    unlockArtisanZone(name) {
-      const def = ARTISAN_ZONE_DEFS.find(d => d.name === name);
-      if (!def || gold.amount < def.cost) return false;
-      gold.add(-def.cost);
-      artisanWS.unlockedSet.add(name);
-      artisanWorkers.set(name, BASE_ZONE_WORKERS);
-      artisanTimers.set(name, 0);
-      return true;
-    },
     upgradeArtisanWorkers(name) {
       const def     = ARTISAN_ZONE_DEFS.find(d => d.name === name);
       const current = artisanWorkers.get(name) ?? BASE_ZONE_WORKERS;
@@ -558,14 +491,6 @@ export function createEngine() {
       gold.add(-cost);
       artisanWorkers.set(name, current + 1);
       return true;
-    },
-    assignCrop(zoneName, cropId) {
-      if (!unlockedFarmZones.has(zoneName) || !CROPS[cropId]) return;
-      zoneCrops.set(zoneName, new CropInstance(CROPS[cropId]));
-    },
-    assignArtisanProduct(zoneName, cropId) {
-      if (!artisanWS.unlockedSet.has(zoneName) || !CROPS[cropId]) return;
-      artisanWS.zoneProductMap.set(zoneName, cropId);
     },
     setAutoSell(key, value)  { if (value) autoSellSet.add(key); else autoSellSet.delete(key); },
     setGameSpeed(v)          { gameSpeed = v; },

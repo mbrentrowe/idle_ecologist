@@ -162,40 +162,36 @@ function renderCrops() {
   const farmHeader = el('h2', 'section-header', '🌾 Farm Zones');
   content.appendChild(farmHeader);
 
-  // "Set all farms" chip row — only when 2+ zones are unlocked
-  const unlockedFarmDefs = FARM_ZONE_DEFS.filter(d => engine.unlockedFarmZones.has(d.name));
-  if (unlockedFarmDefs.length > 1) {
-    const availCrops = Object.values(CROPS).filter(c => c.isUnlocked(engine.cropStats, lifetimeGold));
-    const setAllWrap = el('div', 'set-all-picker');
-    setAllWrap.appendChild(el('span', 'set-all-label', 'Set all farms:'));
-    const chips = el('div', 'set-all-chips');
-    // Highlight chip if all unlocked farms share the same crop
-    const farmCropIds = unlockedFarmDefs.map(d => engine.zoneCrops.get(d.name)?.cropType?.id ?? null);
-    const activeFarmCrop = farmCropIds.every(id => id && id === farmCropIds[0]) ? farmCropIds[0] : null;
-    availCrops.forEach(ct => {
-      const chip = el('button', `set-all-chip${ct.id === activeFarmCrop ? ' active' : ''}`);
-      chip.innerHTML = cropIconHtml(CROP_ICON_GID[ct.id], 20) + `<span>${ct.name}</span>`;
-      chip.addEventListener('click', () => { unlockedFarmDefs.forEach(d => engine.assignCrop(d.name, ct.id)); renderAll(); });
-      chips.appendChild(chip);
-    });
-    setAllWrap.appendChild(chips);
-    content.appendChild(setAllWrap);
-  }
-
   FARM_ZONE_DEFS.forEach(def => {
     const unlocked = engine.unlockedFarmZones.has(def.name);
     const card = el('div', `zone-card${unlocked ? '' : ' locked'}`);
 
     if (!unlocked) {
-      const costSpan = el('div', 'lock-row');
-      costSpan.innerHTML = `<span class="lock-icon">🔒</span><span class="zone-name">${def.name}</span><span class="lock-cost">🪙 ${shortNumber(def.cost)}</span>`;
-      const buyBtn = el('button', 'buy-btn', 'Unlock');
-      buyBtn.disabled = engine.gold.amount < def.cost;
-      buyBtn.addEventListener('click', () => { engine.unlockFarmZone(def.name); renderAll(); });
-      costSpan.appendChild(buyBtn);
-      const farmZoneTta = timeToUnlock(def.cost);
-      if (farmZoneTta) costSpan.appendChild(el('span', 'tta-label', farmZoneTta));
-      card.appendChild(costSpan);
+      const boundCrop = CROPS[def.cropId];
+      const lockRow = el('div', 'lock-row');
+      lockRow.innerHTML = `
+        <span class="lock-icon">🔒</span>
+        <span class="zone-name">${def.name}</span>
+        <span class="lock-crop">${cropIconHtml(CROP_ICON_GID[def.cropId], 16)} ${boundCrop?.name ?? def.cropId}</span>
+      `;
+      card.appendChild(lockRow);
+      if (boundCrop?.unlockCriteria) {
+        const { cropId: gateCropId, cropSold, goldEarned } = boundCrop.unlockCriteria;
+        const soldNow = engine.cropStats.get(gateCropId)?.sold ?? 0;
+        const soldPct = Math.min(100, Math.round(soldNow / cropSold * 100));
+        const goldPct = Math.min(100, Math.round(lifetimeGold / goldEarned * 100));
+        const srcIcon = cropIconHtml(CROP_ICON_GID[gateCropId], 14);
+        const reqsEl  = el('div', 'unlock-reqs');
+        reqsEl.innerHTML = `
+          <span class="unlock-req">${srcIcon} ${shortNumber(soldNow)}<span class="next-sep">/</span>${shortNumber(cropSold)} sold
+            <span class="next-mini-bar"><span class="next-mini-fill" style="width:${soldPct}%"></span></span>
+          </span>
+          <span class="unlock-req">🪙 ${shortNumber(lifetimeGold)}<span class="next-sep">/</span>${shortNumber(goldEarned)} earned
+            <span class="next-mini-bar"><span class="next-mini-fill gold" style="width:${goldPct}%"></span></span>
+          </span>
+        `;
+        card.appendChild(reqsEl);
+      }
     } else {
       const instance = engine.zoneCrops.get(def.name);
       const ct       = instance?.cropType;
@@ -230,19 +226,6 @@ function renderCrops() {
           : `Growing — stage ${instance.phase + 1} of ${ct.totalPhases}`
         : '';
       card.appendChild(phaseRow);
-
-      // Crop selector chips
-      const availCropsZone = Object.values(CROPS).filter(c => c.isUnlocked(engine.cropStats, lifetimeGold));
-      const cropPickerWrap = el('div', 'zone-chip-picker');
-      const cropChips = el('div', 'set-all-chips');
-      availCropsZone.forEach(c => {
-        const chip = el('button', `set-all-chip${c.id === ct?.id ? ' active' : ''}`);
-        chip.innerHTML = cropIconHtml(CROP_ICON_GID[c.id], 18) + `<span>${c.name}</span>`;
-        chip.addEventListener('click', () => { engine.assignCrop(def.name, c.id); renderAll(); });
-        cropChips.appendChild(chip);
-      });
-      cropPickerWrap.appendChild(cropChips);
-      card.appendChild(cropPickerWrap);
 
       // Acre upgrade row
       const currentAcres = engine.zoneAcres.get(def.name) ?? 1;
@@ -286,40 +269,32 @@ function renderArtisan() {
   const artHeader = el('h2', 'section-header', '🏺 Artisan Workshops');
   content.appendChild(artHeader);
 
-  // "Set all workshops" chip row — only when 2+ are unlocked
-  const unlockedArtisanDefs = ARTISAN_ZONE_DEFS.filter(d => engine.artisanWS.unlockedSet.has(d.name));
-  if (unlockedArtisanDefs.length > 1) {
-    const availArtisanCrops = Object.values(CROPS).filter(c => c.artisanProduct && c.isUnlocked(engine.cropStats, lifetimeGold));
-    const artSetAllWrap = el('div', 'set-all-picker');
-    artSetAllWrap.appendChild(el('span', 'set-all-label', 'Set all workshops:'));
-    const artChips = el('div', 'set-all-chips');
-    // Highlight chip if all unlocked workshops share the same product
-    const artProductIds = unlockedArtisanDefs.map(d => engine.artisanWS.zoneProductMap.get(d.name) ?? null);
-    const activeArtProduct = artProductIds.every(id => id && id === artProductIds[0]) ? artProductIds[0] : null;
-    availArtisanCrops.forEach(ct => {
-      const chip = el('button', `set-all-chip${ct.id === activeArtProduct ? ' active' : ''}`);
-      chip.innerHTML = cropIconHtml(CROP_ICON_GID[ct.id], 20) + `<span>${ct.artisanProduct.name}</span>`;
-      chip.addEventListener('click', () => { unlockedArtisanDefs.forEach(d => engine.assignArtisanProduct(d.name, ct.id)); renderAll(); });
-      artChips.appendChild(chip);
-    });
-    artSetAllWrap.appendChild(artChips);
-    content.appendChild(artSetAllWrap);
-  }
-
   ARTISAN_ZONE_DEFS.forEach(def => {
     const unlocked  = engine.artisanWS.unlockedSet.has(def.name);
     const card = el('div', `zone-card${unlocked ? '' : ' locked'}`);
 
     if (!unlocked) {
-      const costRow = el('div', 'lock-row');
-      costRow.innerHTML = `<span class="lock-icon">🔒</span><span class="zone-name">${def.name}</span><span class="lock-cost">🪙 ${shortNumber(def.cost)}</span>`;
-      const buyBtn = el('button', 'buy-btn', 'Unlock');
-      buyBtn.disabled = engine.gold.amount < def.cost;
-      buyBtn.addEventListener('click', () => { engine.unlockArtisanZone(def.name); renderAll(); });
-      costRow.appendChild(buyBtn);
-      const artZoneTta = timeToUnlock(def.cost);
-      if (artZoneTta) costRow.appendChild(el('span', 'tta-label', artZoneTta));
-      card.appendChild(costRow);
+      const crop = CROPS[def.cropId];
+      const ap   = crop?.artisanProduct;
+      const lockRow = el('div', 'lock-row');
+      lockRow.innerHTML = `
+        <span class="lock-icon">🔒</span>
+        <span class="zone-name">${def.name}</span>
+        <span class="lock-crop">${cropIconHtml(CROP_ICON_GID[def.cropId], 16)} ${ap?.name ?? def.cropId}</span>
+      `;
+      card.appendChild(lockRow);
+      if (ap) {
+        const soldNow = engine.cropStats.get(def.cropId)?.sold ?? 0;
+        const pct     = Math.min(100, Math.round(soldNow / ap.unlockCropSold * 100));
+        const srcIcon = cropIconHtml(CROP_ICON_GID[def.cropId], 14);
+        const reqsEl  = el('div', 'unlock-reqs');
+        reqsEl.innerHTML = `
+          <span class="unlock-req">${srcIcon} ${shortNumber(soldNow)}<span class="next-sep">/</span>${shortNumber(ap.unlockCropSold)} ${crop.name} sold
+            <span class="next-mini-bar"><span class="next-mini-fill" style="width:${pct}%"></span></span>
+          </span>
+        `;
+        card.appendChild(reqsEl);
+      }
     } else {
       const cropId      = engine.artisanWS.zoneProductMap.get(def.name);
       const ct          = cropId ? CROPS[cropId] : null;
@@ -352,19 +327,6 @@ function renderArtisan() {
         barWrap.appendChild(pctLabel);
       }
       card.appendChild(barWrap);
-
-      const artisanCrops = Object.values(CROPS).filter(c =>
-        c.artisanProduct && c.isUnlocked(engine.cropStats, lifetimeGold));
-      const artPickerWrap = el('div', 'zone-chip-picker');
-      const artChipsEl = el('div', 'set-all-chips');
-      artisanCrops.forEach(c => {
-        const chip = el('button', `set-all-chip${c.id === cropId ? ' active' : ''}`);
-        chip.innerHTML = cropIconHtml(CROP_ICON_GID[c.id], 18) + `<span>${c.artisanProduct.name}</span>`;
-        chip.addEventListener('click', () => { engine.assignArtisanProduct(def.name, c.id); renderAll(); });
-        artChipsEl.appendChild(chip);
-      });
-      artPickerWrap.appendChild(artChipsEl);
-      card.appendChild(artPickerWrap);
 
       // Worker upgrade row
       const artWorkerCost  = workerUpgradeCost(def, artWorkers);
@@ -643,14 +605,15 @@ let lastZonesFingerprint = '';
 
 function zonesFingerprint() {
   const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
-  const unlockedCropCount = Object.values(CROPS).filter(c => c.isUnlocked(engine.cropStats, lifetimeGold)).length;
   const farmParts = FARM_ZONE_DEFS
     .filter(d => engine.unlockedFarmZones.has(d.name))
     .map(d => `${d.name}:${engine.zoneAcres.get(d.name) ?? 1}:${engine.zoneWorkers.get(d.name) ?? 1}`).join(',');
   const artParts = ARTISAN_ZONE_DEFS
     .filter(d => engine.artisanWS.unlockedSet.has(d.name))
     .map(d => `${d.name}:${engine.artisanWorkers.get(d.name) ?? 1}`).join(',');
-  return `f${engine.unlockedFarmZones.size}|a${engine.artisanWS.unlockedSet.size}|c${unlockedCropCount}|${farmParts}|${artParts}`;
+  // Sample sold/gold (bucketed) so locked-card criteria bars re-render as progress advances
+  const totalSold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.sold, 0);
+  return `f${engine.unlockedFarmZones.size}|a${engine.artisanWS.unlockedSet.size}|${farmParts}|${artParts}|s${Math.floor(totalSold / 10)}|g${Math.floor(lifetimeGold / 10000)}`;
 }
 
 function liveUpdate() {

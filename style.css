@@ -141,6 +141,7 @@ body {
 .lock-icon  { font-size: 15px; }
 .zone-name  { color: #aaa; font-weight: bold; flex: 1; }
 .lock-cost  { color: #ffd700; font-size: 13px; }
+.lock-crop  { color: #bbb; font-size: 13px; display: flex; align-items: center; gap: 5px; }
 
 .zone-top-row {
   display: flex;
