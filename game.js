@@ -3,6 +3,7 @@
 
 import { CROPS, CropInstance } from './crops.js';
 import { WORK_ACTIVITIES }     from './activityRegistry.js';
+import { RESEARCH }            from './research.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 export const DAY_REAL_SECS = 240; // 4 real minutes = 1 in-game day
@@ -122,6 +123,13 @@ export function createEngine() {
   let   gamePaused   = false;
   let   calendarAccum = 0;
   let   inGameDay    = 1;
+
+  // ── Research state ────────────────────────────────────────────────────────
+  let   researchPoints      = 0;
+  let   researchAccum       = 0;   // sub-point accumulator
+  let   activeResearchId    = null;
+  let   activeResearchTimer = 0;   // elapsed seconds (×gameSpeed)
+  const completedResearch    = new Set();
 
   // ── Farm zones ──────────────────────────────────────────────────────────────
   const unlockedFarmZones = new Set(); // populated by checkAutoUnlocks()
@@ -331,6 +339,27 @@ export function createEngine() {
       }
     }
 
+    // Research point generation (1 pt per unlocked farm zone per in-game day)
+    {
+      researchAccum += gameSpeed * unlockedFarmZones.size / DAY_REAL_SECS;
+      if (researchAccum >= 1) {
+        const earned   = Math.floor(researchAccum);
+        researchPoints += earned;
+        researchAccum  -= earned;
+      }
+      if (activeResearchId) {
+        const project = RESEARCH.find(r => r.id === activeResearchId);
+        if (project) {
+          activeResearchTimer += gameSpeed;
+          if (activeResearchTimer >= project.duration) {
+            completedResearch.add(activeResearchId);
+            activeResearchId    = null;
+            activeResearchTimer = 0;
+          }
+        }
+      }
+    }
+
     runAutoPilot();
     checkAutoUnlocks();
   }
@@ -399,6 +428,9 @@ export function createEngine() {
       artisanProductMap: Object.fromEntries(artisanWS.zoneProductMap),
       artisanProductStats: Object.fromEntries(artisanWS.productStats),
       artisanInventory: Object.fromEntries(artisanWS.productInventory),
+      researchPoints, researchAccum,
+      activeResearchId, activeResearchTimer,
+      completedResearch: [...completedResearch],
       savedAt: Date.now(),
     };
   }
@@ -481,6 +513,14 @@ export function createEngine() {
     if (s.cropStats)         Object.entries(s.cropStats).forEach(([id, cs])   => { if (cropStats.has(id))               Object.assign(cropStats.get(id), cs); });
     if (s.artisanProductStats) Object.entries(s.artisanProductStats).forEach(([k, v]) => { if (artisanWS.productStats.has(k)) Object.assign(artisanWS.productStats.get(k), v); });
     if (s.artisanInventory)  { artisanWS.productInventory.clear(); Object.entries(s.artisanInventory).forEach(([k, v])  => artisanWS.productInventory.set(k, v)); }
+    if (typeof s.researchPoints      === 'number')  researchPoints      = s.researchPoints;
+    if (typeof s.researchAccum       === 'number')  researchAccum       = s.researchAccum;
+    if ('activeResearchId' in s)                    activeResearchId    = s.activeResearchId;
+    if (typeof s.activeResearchTimer === 'number')  activeResearchTimer = s.activeResearchTimer;
+    if (Array.isArray(s.completedResearch)) {
+      completedResearch.clear();
+      s.completedResearch.forEach(id => completedResearch.add(id));
+    }
     checkAutoUnlocks(); // re-derive zoneProductMap and catch any new unlocks
   }
 
@@ -588,6 +628,36 @@ export function createEngine() {
 
     setGameSpeed(v)          { gameSpeed = v; },
     setAutoPilot(v)          { autoPilot = v; },
+
+    // Research
+    get researchPoints()      { return researchPoints; },
+    get activeResearchId()    { return activeResearchId; },
+    get activeResearchTimer() { return activeResearchTimer; },
+    completedResearch,
+    getBiosphereScore() {
+      return [...completedResearch].reduce((sum, id) => {
+        const r = RESEARCH.find(p => p.id === id);
+        return sum + (r?.effect?.biosphereBonus ?? 0);
+      }, 0);
+    },
+    startResearch(id) {
+      if (activeResearchId) return false;
+      const project = RESEARCH.find(r => r.id === id);
+      if (!project || completedResearch.has(id)) return false;
+      if (researchPoints < project.cost) return false;
+      if (project.requires.some(req => !completedResearch.has(req))) return false;
+      researchPoints     -= project.cost;
+      activeResearchId    = id;
+      activeResearchTimer = 0;
+      return true;
+    },
+    cancelResearch() {
+      if (!activeResearchId) return;
+      const project = RESEARCH.find(r => r.id === activeResearchId);
+      if (project) researchPoints += project.cost;
+      activeResearchId    = null;
+      activeResearchTimer = 0;
+    },
 
     // Engine lifecycle
     tick,

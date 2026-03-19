@@ -1,6 +1,7 @@
 // main.js — UI layer and entry point for Idle Ecologist Text UI
 import { createEngine, shortNumber, FARM_ZONE_DEFS, ARTISAN_ZONE_DEFS, DAY_REAL_SECS, acreUpgradeCost, workerUpgradeCost, workerMultiplier } from './game.js';
 import { CROPS } from './crops.js';
+import { RESEARCH, RESEARCH_CATEGORIES } from './research.js';
 
 // ── Crop emoji map ────────────────────────────────────────────────────────────
 // Used only in <select> option text (HTML not supported there)
@@ -62,7 +63,7 @@ document.addEventListener('visibilitychange', () => {
 acquireWakeLock();
 
 // ── Tab state ─────────────────────────────────────────────────────────────────
-const TABS = ['crops', 'artisan', 'market', 'stats', 'settings'];
+const TABS = ['crops', 'artisan', 'market', 'stats', 'research', 'settings'];
 let activeTab = 'crops';
 
 // ── UI Construction ───────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ header.appendChild(nextCropEl);
 
 // Tabs
 const tabBar = document.getElementById('tab-bar');
-const TAB_LABELS = { crops: '🌾 Crops', artisan: '🏺 Artisan', market: '💰 Market', stats: '📊 Stats', settings: '⚙️ Settings' };
+const TAB_LABELS = { crops: '🌾 Crops', artisan: '🏺 Artisan', market: '💰 Market', stats: '📊 Stats', research: '🔬 Research', settings: '⚙️ Settings' };
 TABS.forEach(tab => {
   const btn = el('button', 'tab-btn', TAB_LABELS[tab] ?? (tab.charAt(0).toUpperCase() + tab.slice(1)));
   btn.dataset.tab = tab;
@@ -104,6 +105,7 @@ function renderAll() {
     case 'artisan':  lastZonesFingerprint = zonesFingerprint(); renderArtisan();  break;
     case 'market':   renderMarket();   break;
     case 'stats':    renderStats();    break;
+    case 'research': renderResearch(); break;
     case 'settings': renderSettings(); break;
   }
 }
@@ -112,7 +114,20 @@ function renderAll() {
 function updateHeader() {
   goldEl.textContent = `🪙 ${shortNumber(engine.gold.amount)}`;
   gpsEl.textContent  = `+${shortNumber(engine.getTotalGPS() * engine.gameSpeed)}/s`;
-  dayEl.textContent  = `Day ${engine.inGameDay}`;
+
+  // Time of day derived from calendarAccum (0 → midnight, 0.5 → noon)
+  const fracOfDay  = engine.calendarAccum / DAY_REAL_SECS;
+  const totalMins  = Math.floor(fracOfDay * 24 * 60);
+  const hr24       = Math.floor(totalMins / 60);
+  const min        = totalMins % 60;
+  const ampm       = hr24 < 12 ? 'AM' : 'PM';
+  const hr12       = hr24 % 12 || 12;
+  const timeStr    = `${hr12}:${String(min).padStart(2, '0')} ${ampm}`;
+  const timeIcon   = hr24 < 5 || hr24 >= 21 ? '🌙'
+                   : hr24 < 8               ? '🌅'
+                   : hr24 < 18              ? '☀️'
+                   :                          '🌇';
+  dayEl.textContent  = `Day ${engine.inGameDay} · ${timeIcon} ${timeStr}`;
 
   // Next crop unlock progress
   const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
@@ -528,6 +543,141 @@ function renderStats() {
   artTable.appendChild(atbody);
   content.appendChild(artTable);
 
+}
+
+// ── RESEARCH TAB ─────────────────────────────────────────────────────────────
+function renderResearch() {
+  const completed  = engine.completedResearch;
+  const activeId   = engine.activeResearchId;
+  const activeTimer= engine.activeResearchTimer;
+  const pts        = engine.researchPoints;
+  const biosphere  = engine.getBiosphereScore();
+  const maxBiosphere = RESEARCH.reduce((s, r) => s + (r.effect?.biosphereBonus ?? 0), 0);
+
+  // ── Biosphere Score banner ──────────────────────────────────────────────────
+  const banner = el('div', 'research-banner');
+  const bioPct = Math.round(biosphere / maxBiosphere * 100);
+  banner.innerHTML = `
+    <div class="research-banner-row">
+      <span class="bio-label">🌍 Biosphere Score</span>
+      <span class="bio-score">${biosphere} <span class="bio-max">/ ${maxBiosphere}</span></span>
+      <span class="research-pts">🔬 ${pts} pts</span>
+    </div>
+    <div class="bio-bar-track"><div class="bio-bar-fill" style="width:${bioPct}%"></div></div>
+    <p class="research-hint">Research points are earned passively — ${engine.unlockedFarmZones.size} pt${engine.unlockedFarmZones.size !== 1 ? 's' : ''}/day from your ${engine.unlockedFarmZones.size} unlocked farm zone${engine.unlockedFarmZones.size !== 1 ? 's' : ''}.</p>
+  `;
+  content.appendChild(banner);
+
+  // ── Active research card ────────────────────────────────────────────────────
+  if (activeId) {
+    const project = RESEARCH.find(r => r.id === activeId);
+    const pct     = project ? Math.min(100, Math.round(activeTimer / project.duration * 100)) : 0;
+    const remaining = project ? Math.max(0, project.duration - activeTimer) : 0;
+
+    const activeCard = el('div', 'research-active-card');
+    activeCard.innerHTML = `
+      <div class="research-active-header">
+        <span class="research-active-icon">${project?.icon ?? '🔬'}</span>
+        <span class="research-active-name">${project?.name ?? activeId}</span>
+        <span class="research-active-time">${fmtDur(remaining / engine.gameSpeed)} remaining</span>
+      </div>
+      <div class="research-progress-track">
+        <div class="research-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="research-active-footer">
+        <span class="research-active-pct">${pct}% complete</span>
+        <button class="action-btn danger research-cancel-btn">✕ Cancel</button>
+      </div>
+    `;
+    activeCard.querySelector('.research-cancel-btn').addEventListener('click', () => {
+      engine.cancelResearch();
+      renderAll();
+    });
+    content.appendChild(activeCard);
+  } else {
+    const idleNote = el('p', 'research-idle-note', '— No project in progress. Start one below. —');
+    content.appendChild(idleNote);
+  }
+
+  // ── Category sections ──────────────────────────────────────────────────────
+  for (const cat of Object.values(RESEARCH_CATEGORIES)) {
+    const catProjects = RESEARCH.filter(r => r.category === cat.id);
+    const section = el('div', 'research-section');
+
+    const catHeader = el('h2', 'section-header', cat.label);
+    section.appendChild(catHeader);
+
+    const catDesc = el('p', 'research-cat-desc', cat.desc);
+    section.appendChild(catDesc);
+
+    for (const project of catProjects) {
+      const isDone   = completed.has(project.id);
+      const isActive = activeId === project.id;
+      const prereqsMet = project.requires.every(req => completed.has(req));
+      const canAfford  = pts >= project.cost;
+      const canStart   = prereqsMet && canAfford && !isDone && !activeId;
+
+      const card = el('div', `research-card${isDone ? ' research-done' : ''}${isActive ? ' research-in-progress' : ''}${!prereqsMet ? ' research-locked' : ''}`);
+
+      // Header row
+      const cardHead = el('div', 'research-card-head');
+      cardHead.innerHTML = `<span class="research-icon">${project.icon}</span><span class="research-name">${project.name}</span>`;
+
+      // Status badge
+      const badge = el('span', 'research-badge');
+      if (isDone) {
+        badge.className = 'research-badge done';
+        badge.textContent = '✅ Complete';
+      } else if (isActive) {
+        badge.className = 'research-badge active';
+        badge.textContent = '🔬 Researching…';
+      } else if (!prereqsMet) {
+        badge.className = 'research-badge locked';
+        badge.textContent = '🔒 Locked';
+      } else {
+        badge.className = 'research-badge available';
+        badge.textContent = `🔬 ${project.cost} pts · ${fmtDur(project.duration / engine.gameSpeed)}`;
+      }
+      cardHead.appendChild(badge);
+      card.appendChild(cardHead);
+
+      // Description + flavor
+      const descEl = el('p', 'research-desc', project.desc);
+      card.appendChild(descEl);
+      const flavor = el('p', 'research-flavor', project.flavorText);
+      card.appendChild(flavor);
+
+      // Effect & prerequisites
+      const meta = el('div', 'research-meta');
+      meta.innerHTML = `<span class="research-effect">✨ ${project.effect.label}</span>`;
+      if (project.requires.length > 0) {
+        const reqNames = project.requires.map(req => {
+          const r = RESEARCH.find(p => p.id === req);
+          const met = completed.has(req);
+          return `<span class="research-req${met ? ' met' : ''}">${met ? '✅' : '🔒'} ${r?.name ?? req}</span>`;
+        });
+        meta.innerHTML += `&nbsp;·&nbsp; Requires: ${reqNames.join(', ')}`;
+      }
+      card.appendChild(meta);
+
+      // Action button
+      if (!isDone && !isActive) {
+        const btnRow = el('div', 'btn-row');
+        const btn = el('button', `action-btn${canStart ? '' : ' disabled'}`, canStart ? '▶ Start Research' : (!prereqsMet ? '🔒 Prerequisites needed' : `🔬 Need ${project.cost - pts} more pts`));
+        if (canStart) {
+          btn.addEventListener('click', () => { engine.startResearch(project.id); renderAll(); });
+        } else {
+          btn.disabled = true;
+        }
+        btnRow.appendChild(btn);
+        card.appendChild(btnRow);
+      }
+
+      section.appendChild(card);
+    }
+
+    content.appendChild(section);
+  }
 }
 
 // ── SETTINGS TAB ─────────────────────────────────────────────────────────────
