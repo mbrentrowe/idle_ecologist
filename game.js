@@ -14,8 +14,8 @@ const SAVE_KEY             = 'idle-ecologist-text-v1';
 export const BASE_ZONE_ACRES   = 1;
 export const BASE_ZONE_WORKERS = 1;
 
-/** Speed multiplier for a zone with w workers: 1× at 1 worker, 2× at 10. */
-export function workerMultiplier(w) { return 1 + (w - 1) / 9; }
+/** Speed multiplier for a zone with w workers: 1× at 1 worker, 4× at 10. */
+export function workerMultiplier(w) { return 1 + (w - 1) / 3; }
 
 /** Cost to hire the next worker.
  *  Cheap for the first 10 (0.4 × n), then quadratic (0.04 × n²) so early

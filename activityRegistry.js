@@ -14,7 +14,7 @@ export const WORK_ACTIVITIES = [
     },
     defaultZoneCost: 75000,
 
-    productionIntervalSecs: 5,
+    productionIntervalSecs: 30,
 
     loadZones(objects) {
       return objects.map((obj, i) => ({

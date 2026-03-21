@@ -1061,7 +1061,9 @@ function showOfflineToast(result, realSecs) {
 }
 
 // ── Update loop ───────────────────────────────────────────────────────────────
-let lastZonesFingerprint = '';
+let lastZonesFingerprint    = '';
+let lastResearchFingerprint = '';
+let lastGardenFingerprint   = '';
 
 function zonesFingerprint() {
   const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
@@ -1104,6 +1106,50 @@ function liveUpdate() {
         const cur = engine.artisanWorkers.get(def.name) ?? 1;
         btn.disabled = engine.gold.amount < workerUpgradeCost(def, cur);
       });
+    }
+  } else if (activeTab === 'research') {
+    // Re-render fully when completions, pts, or active project change
+    const rfp = `${engine.completedResearch.size}|${engine.activeResearchId}|${Math.floor(engine.researchPoints)}`;
+    if (rfp !== lastResearchFingerprint) {
+      lastResearchFingerprint = rfp;
+      renderAll();
+    } else if (engine.activeResearchId) {
+      // In-place: update progress bar and time remaining
+      const project = RESEARCH.find(r => r.id === engine.activeResearchId);
+      if (project) {
+        const pct       = Math.min(100, Math.round(engine.activeResearchTimer / project.duration * 100));
+        const remaining = Math.max(0, project.duration - engine.activeResearchTimer);
+        const fill    = content.querySelector('.research-progress-fill');
+        if (fill) fill.style.width = `${pct}%`;
+        const timeEl  = content.querySelector('.research-active-time');
+        if (timeEl) timeEl.textContent = `${fmtDur(remaining / engine.gameSpeed)} remaining`;
+        const pctEl   = content.querySelector('.research-active-pct');
+        if (pctEl) pctEl.textContent = `${pct}% complete`;
+      }
+    }
+  } else if (activeTab === 'garden') {
+    // Re-render fully when planted set or active plant changes
+    const gfp = `${engine.plantedSpecies.size}|${engine.activePlantingId}`;
+    if (gfp !== lastGardenFingerprint) {
+      lastGardenFingerprint = gfp;
+      renderAll();
+    } else if (engine.activePlantingId) {
+      // In-place: update planting progress bar and time remaining
+      let plantDuration = null;
+      for (const region of ECOREGIONS) {
+        const p = region.plants.find(pl => pl.id === engine.activePlantingId);
+        if (p) { plantDuration = p.duration; break; }
+      }
+      if (plantDuration) {
+        const pct       = Math.min(100, Math.round(engine.activePlantingTimer / plantDuration * 100));
+        const remaining = Math.max(0, plantDuration - engine.activePlantingTimer);
+        const fill    = content.querySelector('.garden-progress');
+        if (fill) fill.style.width = `${pct}%`;
+        const timeEl  = content.querySelector('.research-active-time');
+        if (timeEl) timeEl.textContent = `${fmtDur(remaining / engine.gameSpeed)} remaining`;
+        const pctEl   = content.querySelector('.research-active-pct');
+        if (pctEl) pctEl.textContent = `${pct}% established`;
+      }
     }
   }
 }
