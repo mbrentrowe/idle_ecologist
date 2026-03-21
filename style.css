@@ -707,6 +707,26 @@ body {
 .garden-plant-sci   { font-size: 11px; font-style: italic; color: #668866; }
 .garden-badges      { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0; }
 
+/* iNaturalist thumbnails */
+.inat-thumb {
+  object-fit: cover;
+  border-radius: 5px;
+  flex-shrink: 0;
+  background: #1a2a1a;
+}
+.garden-thumb {
+  width: 48px;
+  height: 48px;
+  align-self: center;
+}
+.market-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
 /* Type badges */
 .garden-type-badge {
   font-size: 10px;

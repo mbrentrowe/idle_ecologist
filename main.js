@@ -49,6 +49,42 @@ if (saved) {
 setInterval(() => engine.tick(), 250);
 setInterval(() => engine.save(), 10000);
 
+// ── iNaturalist photo cache ───────────────────────────────────────────────────
+const INAT_CACHE_KEY = 'inat-photo-cache-v1';
+const inatPhotoCache = (() => {
+  try { return JSON.parse(localStorage.getItem(INAT_CACHE_KEY) || '{}'); } catch { return {}; }
+})();
+
+async function fetchInatPhoto(sciName) {
+  if (!sciName) return null;
+  if (sciName in inatPhotoCache) return inatPhotoCache[sciName];
+  try {
+    const resp = await fetch(`https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(sciName)}&per_page=1&is_active=true`);
+    const data = await resp.json();
+    const url  = data.results?.[0]?.default_photo?.square_url ?? null;
+    inatPhotoCache[sciName] = url;
+    localStorage.setItem(INAT_CACHE_KEY, JSON.stringify(inatPhotoCache));
+    return url;
+  } catch {
+    return null; // don't cache on network error; will retry next render
+  }
+}
+
+function loadInatThumbs() {
+  content.querySelectorAll('img.inat-thumb[data-sci]').forEach(img => {
+    const sci = img.dataset.sci;
+    if (!sci) return;
+    if (sci in inatPhotoCache) {
+      const url = inatPhotoCache[sci];
+      if (url) { img.src = url; img.style.display = ''; }
+    } else {
+      fetchInatPhoto(sci).then(url => {
+        if (url && img.isConnected) { img.src = url; img.style.display = ''; }
+      });
+    }
+  });
+}
+
 // ── Wake Lock ───────────────────────────────────────────────────────────
 let _wakeLock = null;
 async function acquireWakeLock() {
@@ -123,6 +159,7 @@ function renderAll() {
     case 'garden':   renderGarden();   break;
     case 'settings': renderSettings(); break;
   }
+  loadInatThumbs();
 }
 
 // ── Header update ─────────────────────────────────────────────────────────────
@@ -415,6 +452,13 @@ function renderMarket() {
       <td></td>
       <td>${shortNumber(gps)}/s</td>
     `;
+    if (ct.sciName) {
+      const mThumb = document.createElement('img');
+      mThumb.className = 'inat-thumb market-thumb';
+      mThumb.dataset.sci = ct.sciName;
+      mThumb.style.display = 'none';
+      row.children[0].prepend(mThumb);
+    }
     // Inventory cell — show count; always show sell button when there is stock
     const invCell = row.children[1];
     invCell.appendChild(document.createTextNode(shortNumber(inv)));
@@ -856,6 +900,7 @@ function renderGarden() {
             </div>
             <p class="garden-locked-msg">🔬 Requires research: <strong>${reqNames}</strong></p>
           `;
+          { const lt = document.createElement('img'); lt.className = 'inat-thumb garden-thumb'; lt.dataset.sci = plant.sci; lt.style.display = 'none'; lockedCard.querySelector('.garden-card-head').appendChild(lt); }
           content.appendChild(lockedCard);
           continue;
         }
@@ -879,6 +924,7 @@ function renderGarden() {
           <button class="garden-collapse-btn" title="${isCollapsed ? 'Expand' : 'Collapse'}">${isCollapsed ? '▶' : '▼'}</button>
         `;
         // Toggle on header click (but not on inat link clicks)
+        { const gt = document.createElement('img'); gt.className = 'inat-thumb garden-thumb'; gt.dataset.sci = plant.sci; gt.style.display = 'none'; const cb = cardHead.querySelector('.garden-collapse-btn'); if (cb) cardHead.insertBefore(gt, cb); else cardHead.appendChild(gt); }
         cardHead.addEventListener('click', e => {
           if (e.target.closest('.inat-link')) return;
           if (collapsedGardenCards.has(plant.id)) collapsedGardenCards.delete(plant.id);

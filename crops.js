@@ -2,9 +2,10 @@
 
 // ── CropType ────────────────────────────────────────────────────────────────
 export class CropType {
-  constructor({ id, name, growthPhaseGIDs, growthTimePerPhase, yieldGold, marketIconGID, unlockCriteria, artisanProduct }) {
+  constructor({ id, name, sciName, growthPhaseGIDs, growthTimePerPhase, yieldGold, marketIconGID, unlockCriteria, artisanProduct }) {
     this.id = id;
     this.name = name;
+    this.sciName = sciName || null;
     this.growthPhaseGIDs = growthPhaseGIDs;
     this.growthTimePerPhase = growthTimePerPhase;
     this.yieldGold = yieldGold;
@@ -62,72 +63,72 @@ export class CropInstance {
 // ── Crop Definitions ─────────────────────────────────────────────────────────
 export const CROPS = {
   strawberry: new CropType({
-    id: 'strawberry', name: 'Strawberry',
+    id: 'strawberry', name: 'Strawberry', sciName: 'Fragaria ananassa',
     growthPhaseGIDs: [4479,4480,4481,4482,4483,4484], growthTimePerPhase: 10, yieldGold: 25, marketIconGID: 4486,
     artisanProduct: { name: 'Strawberry Wine',     cropInputCount: 5, goldValue:    375, iconGID: 4486, unlockCropSold:  500 },
   }),
   greenOnion: new CropType({
-    id: 'greenOnion', name: 'Green Onion',
+    id: 'greenOnion', name: 'Green Onion', sciName: 'Allium fistulosum',
     growthPhaseGIDs: [4729,4730,4731,4732,4733,4734], growthTimePerPhase: 14, yieldGold: 45, marketIconGID: 4736,
     unlockCriteria: { cropId: 'strawberry', cropSold:  200, goldEarned:    5000 },
     artisanProduct: { name: 'Pickled Green Onion', cropInputCount: 5, goldValue:    675, iconGID: 4736, unlockCropSold:  500 },
   }),
   potato: new CropType({
-    id: 'potato', name: 'Potato',
+    id: 'potato', name: 'Potato', sciName: 'Solanum tuberosum',
     growthPhaseGIDs: [4978,4979,4980,4981,4982,4983,4984], growthTimePerPhase: 18, yieldGold: 85, marketIconGID: 4986,
     unlockCriteria: { cropId: 'greenOnion', cropSold:  400, goldEarned:   15000 },
     artisanProduct: { name: 'Potato Vodka',        cropInputCount: 5, goldValue:   1275, iconGID: 4986, unlockCropSold:  500 },
   }),
   onion: new CropType({
-    id: 'onion', name: 'Onion',
+    id: 'onion', name: 'Onion', sciName: 'Allium cepa',
     growthPhaseGIDs: [5228,5229,5230,5231,5232,5233,5234], growthTimePerPhase: 22, yieldGold: 160, marketIconGID: 5236,
     unlockCriteria: { cropId: 'potato', cropSold:  600, goldEarned:   30000 },
     artisanProduct: { name: 'Pickled Onion',       cropInputCount: 5, goldValue:   2800, iconGID: 5236, unlockCropSold:  500 },
   }),
   carrot: new CropType({
-    id: 'carrot', name: 'Carrot',
+    id: 'carrot', name: 'Carrot', sciName: 'Daucus carota',
     growthPhaseGIDs: [5479,5480,5481,5482,5483,5484], growthTimePerPhase: 28, yieldGold: 300, marketIconGID: 5486,
     unlockCriteria: { cropId: 'onion', cropSold:  800, goldEarned:   60000 },
     artisanProduct: { name: 'Pickled Carrot',      cropInputCount: 5, goldValue:   6000, iconGID: 5486, unlockCropSold:  500 },
   }),
   blueberry: new CropType({
-    id: 'blueberry', name: 'Blueberry',
+    id: 'blueberry', name: 'Blueberry', sciName: 'Vaccinium corymbosum',
     growthPhaseGIDs: [5729,5730,5731,5732,5733,5734], growthTimePerPhase: 35, yieldGold: 600, marketIconGID: 5736,
     unlockCriteria: { cropId: 'carrot', cropSold: 1000, goldEarned:  150000 },
     artisanProduct: { name: 'Blueberry Wine',      cropInputCount: 5, goldValue:  12000, iconGID: 5736, unlockCropSold:  500 },
   }),
   parsnip: new CropType({
-    id: 'parsnip', name: 'Parsnip',
+    id: 'parsnip', name: 'Parsnip', sciName: 'Pastinaca sativa',
     growthPhaseGIDs: [5979,5980,5981,5982,5983], growthTimePerPhase: 45, yieldGold: 1200, marketIconGID: 5986,
     unlockCriteria: { cropId: 'blueberry', cropSold: 1200, goldEarned:  350000 },
     artisanProduct: { name: 'Pickled Parsnip',     cropInputCount: 5, goldValue:  27000, iconGID: 5986, unlockCropSold:  500 },
   }),
   lettuce: new CropType({
-    id: 'lettuce', name: 'Lettuce',
+    id: 'lettuce', name: 'Lettuce', sciName: 'Lactuca sativa',
     growthPhaseGIDs: [6229,6230,6231,6232,6233,6234,6235], growthTimePerPhase: 55, yieldGold: 2500, marketIconGID: 6236,
     unlockCriteria: { cropId: 'parsnip', cropSold: 1400, goldEarned:  900000 },
     artisanProduct: { name: 'Pickled Lettuce',     cropInputCount: 5, goldValue:  62500, iconGID: 6236, unlockCropSold:  500 },
   }),
   cauliflower: new CropType({
-    id: 'cauliflower', name: 'Cauliflower',
+    id: 'cauliflower', name: 'Cauliflower', sciName: 'Brassica oleracea var. botrytis',
     growthPhaseGIDs: [6479,6480,6481,6482,6483,6484], growthTimePerPhase: 70, yieldGold: 5500, marketIconGID: 6486,
     unlockCriteria: { cropId: 'lettuce', cropSold: 1600, goldEarned: 2500000 },
     artisanProduct: { name: 'Pickled Cauliflower', cropInputCount: 5, goldValue: 137500, iconGID: 6486, unlockCropSold:  500 },
   }),
   rice: new CropType({
-    id: 'rice', name: 'Rice',
+    id: 'rice', name: 'Rice', sciName: 'Oryza sativa',
     growthPhaseGIDs: [6729,6730,6731,6732,6733,6734], growthTimePerPhase: 90, yieldGold: 12000, marketIconGID: 6736,
     unlockCriteria: { cropId: 'cauliflower', cropSold: 1800, goldEarned: 6000000 },
     artisanProduct: { name: 'Sake',                cropInputCount: 5, goldValue: 360000, iconGID: 6736, unlockCropSold:  500 },
   }),
   broccoli: new CropType({
-    id: 'broccoli', name: 'Broccoli',
+    id: 'broccoli', name: 'Broccoli', sciName: 'Brassica oleracea var. italica',
     growthPhaseGIDs: [6979,6980,6981,6982,6983], growthTimePerPhase: 110, yieldGold: 28000, marketIconGID: 6986,
     unlockCriteria: { cropId: 'rice', cropSold: 2000, goldEarned: 18000000 },
     artisanProduct: { name: 'Pickled Broccoli',    cropInputCount: 5, goldValue: 840000, iconGID: 6986, unlockCropSold:  500 },
   }),
   asparagus: new CropType({
-    id: 'asparagus', name: 'Asparagus',
+    id: 'asparagus', name: 'Asparagus', sciName: 'Asparagus officinalis',
     growthPhaseGIDs: [7229,7230,7231,7232,7233], growthTimePerPhase: 130, yieldGold: 65000, marketIconGID: 7236,
     unlockCriteria: { cropId: 'broccoli', cropSold: 2200, goldEarned: 60000000 },
     artisanProduct: { name: 'Pickled Asparagus',   cropInputCount: 5, goldValue: 2275000, iconGID: 7236, unlockCropSold:  500 },
