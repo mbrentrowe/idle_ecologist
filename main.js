@@ -97,7 +97,12 @@ const TAB_LABELS = { crops: '🌾 Crops', artisan: '🏺 Artisan', market: '💰
 TABS.forEach(tab => {
   const btn = el('button', 'tab-btn', TAB_LABELS[tab] ?? (tab.charAt(0).toUpperCase() + tab.slice(1)));
   btn.dataset.tab = tab;
-  btn.addEventListener('click', () => { activeTab = tab; renderAll(); });
+  btn.addEventListener('click', () => {
+    activeTab = tab;
+    renderAll();
+    // Scroll active tab button into view in the tab bar
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  });
   tabBar.appendChild(btn);
 });
 

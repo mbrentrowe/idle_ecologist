@@ -76,12 +76,16 @@ body {
   display: flex;
   background: #111;
   border-bottom: 1px solid #333;
-
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
 }
+#tab-bar::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 .tab-btn {
-  flex: 1;
-  padding: 10px 4px;
+  flex: 0 0 auto;               /* don't shrink — scroll instead */
+  padding: 10px 14px;
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
@@ -944,3 +948,81 @@ body {
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #111; }
 ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+/* ── Mobile / responsive ───────────────────────────────────────── */
+@media (max-width: 480px) {
+
+  /* Header: tighter */
+  #header {
+    padding: 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top));
+    gap: 8px;
+  }
+  .gold-amount { font-size: 15px; }
+  .gps, .day-counter, .activity-badge { font-size: 12px; }
+  .next-crop-bar { font-size: 11px; }
+
+  /* Tab bar: smaller tap targets are fine since it now scrolls */
+  .tab-btn { padding: 9px 12px; font-size: 12px; }
+
+  /* Content: tighter side padding */
+  #content {
+    padding: 10px 10px 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    padding-left: calc(10px + env(safe-area-inset-left));
+    padding-right: calc(10px + env(safe-area-inset-right));
+  }
+
+  /* Stats time-grid: 2 cols instead of 3 */
+  .time-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Tables: allow horizontal scroll so numbers don’t wrap oddly */
+  .data-table { font-size: 12px; }
+  .data-table th, .data-table td { padding: 5px 4px; }
+
+  /* Garden / research cards: tighten */
+  .garden-card, .research-card, .research-active-card, .research-banner {
+    padding: 10px 10px;
+  }
+
+  /* Garden card head: allow badges to wrap to next line */
+  .garden-card-head {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .garden-badges {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* Garden action row: stack vertically on very small screens */
+  .garden-action-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  /* Research active header: allow wrapping */
+  .research-active-header { flex-wrap: wrap; }
+  .research-active-time { width: 100%; text-align: right; font-size: 11px; }
+
+  /* Insect row: stack label above role badge */
+  .garden-insect-row { gap: 4px; }
+  .garden-insect-label { flex-wrap: wrap; }
+
+  /* Acre upgrade row: allow wrap */
+  .acre-upgrade-row { flex-wrap: wrap; }
+
+  /* Offline toast: full-width bottom banner */
+  .offline-toast {
+    left: 10px;
+    right: 10px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+
+  /* Biosphere breakdown: stack rows */
+  .bio-breakdown { flex-direction: column; gap: 2px; }
+
+  /* Toggle bar: smaller buttons */
+  .tab-toggle-btn { font-size: 0.7rem; padding: 3px 10px; }
+}
