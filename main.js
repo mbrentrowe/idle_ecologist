@@ -87,8 +87,9 @@ const header = document.getElementById('header');
 const goldEl    = el('span', 'gold-amount');
 const gpsEl     = el('span', 'gps');
 const dayEl     = el('span', 'day-counter');
+const bioHeaderEl = el('span', 'bio-header');
 const nextCropEl = el('div', 'next-crop-bar');
-[goldEl, gpsEl, dayEl].forEach(e => header.appendChild(e));
+[goldEl, gpsEl, dayEl, bioHeaderEl].forEach(e => header.appendChild(e));
 header.appendChild(nextCropEl);
 
 // Tabs
@@ -142,6 +143,9 @@ function updateHeader() {
                    : hr24 < 18              ? '☀️'
                    :                          '🌇';
   dayEl.textContent  = `Day ${engine.inGameDay} · ${timeIcon} ${timeStr}`;
+
+  // Biosphere score
+  bioHeaderEl.textContent = `🌍 ${engine.getTotalBiosphereScore()}`;
 
   // Next crop unlock progress
   const lifetimeGold = Array.from(engine.cropStats.values()).reduce((s, v) => s + v.lifetimeSales, 0);
@@ -411,10 +415,10 @@ function renderMarket() {
       <td></td>
       <td>${shortNumber(gps)}/s</td>
     `;
-    // Inventory cell — show count; add sell buttons when auto-sell is off
+    // Inventory cell — show count; always show sell button when there is stock
     const invCell = row.children[1];
     invCell.appendChild(document.createTextNode(shortNumber(inv)));
-    if (!auto && inv > 0) {
+    if (inv > 0) {
       const sellAllBtn = el('button', 'sell-btn', 'Sell All');
       sellAllBtn.addEventListener('click', () => { engine.sellInventory(ct.id); renderAll(); });
       invCell.appendChild(sellAllBtn);
@@ -446,7 +450,7 @@ function renderMarket() {
     // Inventory cell
     const invCell = row.children[1];
     invCell.appendChild(document.createTextNode(shortNumber(inv)));
-    if (!auto && inv > 0) {
+    if (inv > 0) {
       const sellAllBtn = el('button', 'sell-btn', 'Sell All');
       sellAllBtn.addEventListener('click', () => { engine.sellInventory(key); renderAll(); });
       invCell.appendChild(sellAllBtn);
