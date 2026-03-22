@@ -29,7 +29,7 @@ export const ECOREGIONS = [
     desc:  'The rolling mixed forests and open plains of Alabama, Georgia, and the Carolinas. Defined by longleaf pine savannas, oak-hickory woodlands, and warm, humid summers that support extraordinary insect diversity.',
     hnpUrl: 'https://homegrownnationalpark.org/keystone-plants/?_ecoregion=8-3-se-usa-plains',
     prestigeRequires: null, // first region — always available
-    prestigeReward:   'Unlocks 8.4 – Ozark/Ouachita-Appalachian Forests · +10% research point generation',
+    prestigeReward:   'Unlocks 8.4 – Ozark/Ouachita-Appalachian Forests · +10% conservation point generation',
 
     plants: [
 
@@ -50,16 +50,20 @@ export const ECOREGIONS = [
             role: 'Larval host plant', note: 'Caterpillars feed on wild strawberry leaves, making this plant essential for this regionally rare skipper.' },
           { name: 'Gray Hairstreak', sci: 'Strymon melinus', type: 'butterfly',
             role: 'Larval host plant', note: 'Larvae bore into the flower buds and developing fruits — an intimate relationship that predates cultivation.' },
-          { name: 'Mining Bees', sci: 'Andrena spp.', type: 'bee',
-            role: 'Early-season pollen source', note: 'Several Andrena species emerge in early spring specifically to collect wild strawberry pollen, building nests in bare soil nearby.' },
-          { name: 'Sweat Bees', sci: 'Halictus spp.', type: 'bee',
-            role: 'Nectar & pollen source', note: 'The tiny blooms provide critical early nectar for small native bees before most other plants have flowered.' },
+          { name: "Carlin's Mining Bee", sci: 'Andrena carlini', type: 'bee',
+            role: 'Early-season pollen source', note: "One of the first native bees active each spring, Carlin's Mining Bee nests in bare soil and specializes in early-blooming flowers — wild strawberry pollen is among its primary resources." },
+          { name: "Nason's Mining Bee", sci: 'Andrena nasonii', type: 'bee',
+            role: 'Early-season pollen source', note: "A common spring mining bee throughout the SE USA, Nason's Mining Bee builds nest burrows in hard-packed paths and garden beds, timing emergence precisely to the wild strawberry bloom." },
+          { name: 'Ligated Furrow Bee', sci: 'Halictus ligatus', type: 'bee',
+            role: 'Nectar & pollen source', note: 'One of the most abundant native bees in eastern North America, the Ligated Furrow Bee forms small ground colonies and arrives at strawberry blooms throughout the day for both pollen and nectar.' },
+          { name: 'Bicolored Sweat Bee', sci: 'Agapostemon virescens', type: 'bee',
+            role: 'Nectar & pollen source', note: 'Easily identified by its metallic-green head and striped abdomen, this communal ground-nesting sweat bee is among the earliest native bee visitors to wild strawberry each spring.' },
         ],
         wildlifeNote: 'Robins, thrushes, box turtles, and white-footed mice all rely on the fruits. The plant\'s low mat provides cover for ground-nesting insects.',
         caterpillarSpp: 14,
         biosphereBonus: 5,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -75,12 +79,16 @@ export const ECOREGIONS = [
         insectsHosted: [
           { name: 'Hoverflies', sci: 'Syrphidae spp.', type: 'fly',
             role: 'Nectar source & aphid predator', note: 'Dozens of hoverfly species feed on yarrow nectar as adults. Their larvae are voracious predators of aphids — a single larva can eat 400 aphids before pupating.' },
-          { name: 'Parasitoid Wasps', sci: 'Ichneumonidae spp.', type: 'wasp',
-            role: 'Nectar source', note: 'Tiny parasitoid wasps need nectar to fuel their search for caterpillar hosts. By parasitizing pest caterpillars, they provide invisible but powerful crop protection.' },
+          { name: 'Yellow Ophion', sci: 'Ophion flavidus', type: 'wasp',
+            role: 'Nectar source', note: "This slender, reddish-amber parasitoid wasp fuels on yarrow's open flowers by day while searching for moth caterpillars to parasitize. Its larvae develop inside living hosts — providing silent but powerful pest control." },
+          { name: "Say's Netelia", sci: 'Netelia sayi', type: 'wasp',
+            role: 'Nocturnal nectar source', note: 'A nocturnal ichneumon wasp that visits open flowers after dark. It parasitizes moth pupae in the soil, forming an invisible link between the garden surface and the underground insect world.' },
           { name: 'Pearl Crescent', sci: 'Phyciodes tharos', type: 'butterfly',
             role: 'Nectar source', note: 'One of the most common SE butterflies, nectar-fueling continuously between spring and fall on a wide range of blooms.' },
-          { name: 'Sweat Bees', sci: 'Lasioglossum spp.', type: 'bee',
-            role: 'Pollen & nectar source', note: 'Lasioglossum bees, the most species-rich bee genus in North America, are frequent yarrow visitors.' },
+          { name: 'Zephyr Sweat Bee', sci: 'Lasioglossum zephyrum', type: 'bee',
+            role: 'Pollen & nectar source', note: 'One of the most commonly encountered Lasioglossum species in the SE USA. Forms small communal nests in the ground and consistently forages on open, accessible flowers like yarrow for both pollen and nectar.' },
+          { name: 'Broken-banded Sweat Bee', sci: 'Lasioglossum imitatum', type: 'bee',
+            role: 'Pollen & nectar source', note: 'A small native bee highly tolerant of disturbed habitats. On yarrow, both sexes are active from late spring through fall — one of the longest foraging seasons of any native bee in the region.' },
           { name: 'Painted Lady', sci: 'Vanessa cardui', type: 'butterfly',
             role: 'Nectar source', note: 'This globe-trotting butterfly undertakes remarkable multigenerational migrations and stops at yarrow throughout its range.' },
         ],
@@ -88,7 +96,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 9,
         biosphereBonus: 5,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -108,16 +116,22 @@ export const ECOREGIONS = [
             role: 'Nectar source', note: 'The Queen, a close relative of the Monarch, is a boneset specialist throughout the SE USA and is easily missed by those who don\'t grow it.' },
           { name: 'Eastern Tiger Swallowtail', sci: 'Papilio glaucus', type: 'butterfly',
             role: 'Nectar source', note: 'The SE USA\'s largest butterfly is a reliable boneset visitor. Its caterpillars feed on cherry, tulip poplar, and ash — not boneset — so every adult you see is here purely for fuel.' },
-          { name: 'Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Nectar & pollen', note: 'Late-season bumble bee queens need massive nectar and pollen stores to overwinter. Boneset is a reliable late-season source when much else has finished flowering.' },
-          { name: 'Paper Wasps', sci: 'Polistes spp.', type: 'wasp',
-            role: 'Nectar source', note: 'Paper wasps are social predators that hunt caterpillars to feed their larvae. Adults fuelling on boneset nectar help keep caterpillar populations in check around your crops.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Nectar & pollen', note: "The most common bumblebee in eastern North America. On late boneset, queens gather their final fat reserves before seeking an overwintering burrow — this late bloom may determine whether a colony's queens survive to spring." },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Nectar & pollen', note: 'Distinguished by a distinctive brown belt across the second abdominal segment. A frequent late-season boneset visitor, it works quickly through dense flower clusters to maximize pollen and nectar collection.' },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Nectar & pollen', note: 'Once the most abundant bumble bee in the SE USA, the American Bumblebee has declined sharply and is a species of conservation concern. Late boneset blooms provide the critical late-season resources its queens depend on.' },
+          { name: 'Guinea Paper Wasp', sci: 'Polistes exclamans', type: 'wasp',
+            role: 'Nectar source', note: 'The most common paper wasp in the SE USA. Adults fuel on boneset nectar between hunting runs for caterpillars, which they macerate and feed to their developing larvae — a direct benefit to surrounding crops.' },
+          { name: 'Red Paper Wasp', sci: 'Polistes carolina', type: 'wasp',
+            role: 'Nectar source', note: 'A striking rust-red wasp common throughout the SE USA. It builds its open-celled paper nest under eaves and logs, and fuels on boneset nectar between predatory foraging bouts.' },
         ],
         wildlifeNote: 'Seeds are wind-dispersed, and the fluffy seed heads attract goldfinches in autumn. Dense stands provide shelter for overwintering insects.',
         caterpillarSpp: 28,
         biosphereBonus: 6,
         cost: 22,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -139,14 +153,18 @@ export const ECOREGIONS = [
             role: 'Pollen specialist', note: 'This ground-nesting native bee collects pollen almost entirely from asters. It cannot survive without them — a stark example of plant-insect co-evolution.' },
           { name: 'Aster Mining Bee', sci: 'Andrena asteris', type: 'bee',
             role: 'Pollen specialist', note: 'A true aster specialist: females will fly past fields of other flowers to find asters. Nests in small colonies in sandy, bare soil.' },
-          { name: 'Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Late-season nectar & pollen', note: 'Asters are among the last flowers bumble bee queens visit before entering hibernation. A yard full of asters can mean the difference between a colony surviving winter or not.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Late-season nectar & pollen', note: 'Eastern Bumblebees work calico aster intensively in fall, each queen making hundreds of flower visits to store enough energy for the winter and to found a new colony in spring.' },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Late-season nectar & pollen', note: "Calico aster's October bloom arrives just as most wildflowers have finished, making it a critical last stop for Brown-belted Bumblebees preparing to hibernate." },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Late-season nectar & pollen', note: 'This declining bumblebee depends on abundant late-season blooms. Aster plantings directly support overwinter survival of this conservation-priority species by providing resources when almost nothing else is blooming.' },
         ],
         wildlifeNote: 'The fluffy seed heads are eaten by American Goldfinches, Dark-eyed Juncos, and White-throated Sparrows throughout winter.',
         caterpillarSpp: 112,
         biosphereBonus: 7,
         cost: 25,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -164,8 +182,10 @@ export const ECOREGIONS = [
             role: 'Specialist larval host', note: 'Blue wood aster is one of several Symphyotrichum species that Pearl Crescent larvae depend on. In shaded woodland settings, this aster may be the only option.' },
           { name: 'Harris\' Checkerspot', sci: 'Chlosyne harrisii', type: 'butterfly',
             role: 'Larval host', note: 'This regionally localized butterfly uses flat-topped asters as its primary larval host. Local populations can become established when this aster is planted in suitable habitat.' },
-          { name: 'Sweat Bees', sci: 'Lasioglossum spp.', type: 'bee',
-            role: 'Nectar & pollen', note: 'Sweat bees are often the dominant visitors in shaded garden settings where bumble bees are less active.' },
+          { name: 'Zephyr Sweat Bee', sci: 'Lasioglossum zephyrum', type: 'bee',
+            role: 'Nectar & pollen', note: 'In shaded garden settings where larger bees are less active, the Zephyr Sweat Bee thrives — arriving consistently throughout the blue wood aster bloom and visiting far more flowers per hour than any bumble bee could in low light.' },
+          { name: 'Broken-banded Sweat Bee', sci: 'Lasioglossum imitatum', type: 'bee',
+            role: 'Nectar & pollen', note: 'In the partial shade of woodland gardens, small Lasioglossum bees often become the dominant flower visitor — filling the pollination role that larger bees cannot perform in low-light understory settings.' },
           { name: 'Monarch', sci: 'Danaus plexippus', type: 'butterfly',
             role: 'Fall migration nectar', note: 'One of the last blooming native plants, blue wood aster provides critical fuel for Monarch butterflies on their fall migration to Mexico.' },
         ],
@@ -173,7 +193,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 112,
         biosphereBonus: 7,
         cost: 25,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -204,7 +224,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 115,
         biosphereBonus: 8,
         cost: 25,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -222,8 +242,12 @@ export const ECOREGIONS = [
             role: 'Pollen specialist', note: 'Even in dry, disturbed habitats, specialist goldenrod bees seek out this species — demonstrating how native plants maintain food webs in degraded landscapes.' },
           { name: 'Autumn-Tailed Skipper', sci: 'Hesperia attalus', type: 'butterfly',
             role: 'Nectar source', note: 'An SE USA grassland specialist that has declined severely with native grass loss. Where it persists, goldenrods sustain its adults through fall.' },
-          { name: 'Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Late-season nectar & pollen', note: 'Drought-tolerant goldenrods blooming in dry areas extend the range of late-season resources for bumble bees that couldn\'t otherwise forage in those conditions.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Late-season nectar & pollen', note: 'Drought-tolerant old-field goldenrod feeds Eastern Bumblebees in dry habitats where most other flowers have wilted, extending the effective foraging territory of local colonies into roadsides and open fields.' },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Late-season nectar & pollen', note: "Old-field goldenrod's tolerance for dry, disturbed soils means it blooms in roadsides and field margins where Brown-belted Bumblebees range widely — serving as a scattered network of fueling stations." },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Late-season nectar & pollen', note: 'Historically abundant in open grasslands, the American Bumblebee is strongly associated with old-field habitats. Goldenrod in these fields is among its most relied-upon late-season resources.' },
           { name: 'Painted Lady', sci: 'Vanessa cardui', type: 'butterfly',
             role: 'Nectar source', note: 'This migratory butterfly fuels on goldenrod during its fall southward movement. In years of high Painted Lady abundance, goldenrod fields can be alive with orange wings.' },
         ],
@@ -231,7 +255,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 115,
         biosphereBonus: 7,
         cost: 22,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -245,10 +269,16 @@ export const ECOREGIONS = [
         height: '2–3 ft',
         seasonOfInterest: 'Fall',
         insectsHosted: [
-          { name: 'Native Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Late shaded-habitat nectar', note: 'Wreath goldenrod brings fall nectar resources into woodland edges and shade gardens where bumble bees forage but find few options.' },
-          { name: 'Sweat Bees', sci: 'Lasioglossum spp.', type: 'bee',
-            role: 'Pollen & nectar', note: 'Shade-adapted sweat bees that visit the woodland floor are among the most frequent visitors, filling an ecological role that sun-loving bees cannot.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Late shaded-habitat nectar', note: 'Eastern Bumblebees forage readily at woodland edges, and wreath goldenrod is one of very few plants that brings fall nectar into the shaded woodland interior where they frequently roam.' },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Late shaded-habitat nectar', note: "Woodland edge habitats are key foraging territory for Brown-belted Bumblebees. Wreath goldenrod's shade tolerance makes it uniquely valuable for sustaining these bees where sun-loving goldenrods cannot grow." },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Late shaded-habitat nectar', note: 'This declining species benefits from wreath goldenrod extending fall nectar into shaded habitats it frequently uses — hard-to-find resources that matter significantly for population survival.' },
+          { name: 'Zephyr Sweat Bee', sci: 'Lasioglossum zephyrum', type: 'bee',
+            role: 'Pollen & nectar', note: "Shade-adapted sweat bees are among the most frequent woodland-floor pollinators. On wreath goldenrod, the Zephyr Sweat Bee fills an ecological role that sun-loving bees simply cannot occupy." },
+          { name: 'Broken-banded Sweat Bee', sci: 'Lasioglossum imitatum', type: 'bee',
+            role: 'Pollen & nectar', note: 'In shaded garden settings, small sweat bees like L. imitatum often become the dominant visitor, returning to wreath goldenrod repeatedly for both pollen and nectar throughout the day.' },
           { name: 'Pearl Crescent', sci: 'Phyciodes tharos', type: 'butterfly',
             role: 'Nectar source', note: 'Even in dappled woodland light, Pearl Crescents find wreath goldenrod and add a final burst of colour to the late-season garden.' },
         ],
@@ -256,7 +286,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 115,
         biosphereBonus: 6,
         cost: 22,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -270,18 +300,22 @@ export const ECOREGIONS = [
         height: '1–3 ft',
         seasonOfInterest: 'Late Summer through Fall',
         insectsHosted: [
-          { name: 'Goldenrod Specialist Bees', sci: 'Colletes & Andrena spp.', type: 'bee',
-            role: 'Pollen specialist', note: 'Specialist goldenrod bees cannot distinguish the color of flowers — they locate goldenrod by scent and floral chemistry. White goldenrod supports the same specialist community as its yellow relatives.' },
+          { name: 'Goldenrod Plasterer Bee', sci: 'Colletes solidaginis', type: 'bee',
+            role: 'Pollen specialist', note: 'Goldenrod Plasterer Bees locate their host by scent rather than colour — white goldenrod is chemically equivalent to yellow goldenrod. This species waterproofs its nest cells with a secreted polyester-like lining unique among bees.' },
           { name: 'Mining Bees', sci: 'Andrena hirticincta', type: 'bee',
             role: 'Pollen specialist', note: 'This late-season Andrena species is a strict goldenrod pollen specialist, active only in the narrow window when goldenrods bloom.' },
-          { name: 'Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Late-season nectar', note: 'White goldenrod\'s later bloom date extends the nectar season for bumble bee queens storing energy for overwintering.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Late-season nectar', note: "White goldenrod's later bloom extends the nectar season into early fall, capturing Eastern Bumblebee queens still actively building fat stores before seeking a hibernation site." },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Late-season nectar', note: 'The later bloom of white goldenrod relative to yellow goldenrods means Brown-belted Bumblebees find nectar here long after other goldenrod patches have gone to seed.' },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Late-season nectar', note: 'For the declining American Bumblebee, every extended bloom season matters. White goldenrod contributes a late-season buffer of resources that may improve colony overwinter survival rates.' },
         ],
         wildlifeNote: 'The pale flowers are distinctive in autumn. Like all goldenrods, the seed plumes provide winter food for finches and sparrows.',
         caterpillarSpp: 115,
         biosphereBonus: 6,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -299,14 +333,18 @@ export const ECOREGIONS = [
             role: 'Pollen specialist', note: 'Specialist bees that forage on goldenrod recognize Euthamia as functionally equivalent — the same scent chemistry, the same pollen reward.' },
           { name: 'Monarch', sci: 'Danaus plexippus', type: 'butterfly',
             role: 'Migration nectar', note: 'Monarchs passing through moist meadows and wetland edges in fall find this species where dry-habitat goldenrods don\'t grow.' },
-          { name: 'Various Native Bees', sci: 'Multiple spp.', type: 'bee',
-            role: 'Nectar & pollen', note: 'The flat-topped flower clusters are accessible to a wide range of bee body sizes, making this one of the most democratically useful fall nectar sources.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Nectar & pollen', note: 'The flat-topped clusters of grass-leaved goldenrod are ideal landing platforms for larger bees. Eastern Bumblebees make rapid foraging runs across the dense flower heads, visiting dozens of florets per minute.' },
+          { name: 'Zephyr Sweat Bee', sci: 'Lasioglossum zephyrum', type: 'bee',
+            role: 'Nectar & pollen', note: "The small individual florets of Euthamia are perfectly sized for small native bees. The Zephyr Sweat Bee is among the most abundant fall visitors in the moist meadow settings where this plant thrives." },
+          { name: 'Bicolored Sweat Bee', sci: 'Agapostemon virescens', type: 'bee',
+            role: 'Nectar & pollen', note: 'With its metallic green head and striped abdomen, the Bicolored Sweat Bee is one of the most visually striking native bees visiting grass-leaved goldenrod along moist meadow and wetland edges.' },
         ],
         wildlifeNote: 'Where it grows in the moist margins of wetlands, it connects wet and dry habitat food webs by supporting the same suite of specialist insects in both environments.',
         caterpillarSpp: 100,
         biosphereBonus: 6,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -333,7 +371,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 17,
         biosphereBonus: 6,
         cost: 22,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -362,7 +400,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 17,
         biosphereBonus: 7,
         cost: 25,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -380,8 +418,12 @@ export const ECOREGIONS = [
             role: 'Specialist larval host', note: 'All three Rudbeckia species on this checklist support the Silvery Checkerspot. Planting a diverse suite ensures the butterfly has options across different garden microsites and bloom times.' },
           { name: 'Rudbeckia Mining Bee', sci: 'Andrena rudbeckiae', type: 'bee',
             role: 'Pollen specialist', note: 'The later and more reliable bloom of R. fulgida extends the window of specialized pollen availability for this ground-nesting bee, potentially supporting a second brood.' },
-          { name: 'Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Nectar & pollen', note: 'Bumble bees work the large, accessible disk flowers efficiently, often visiting hundreds of blooms in a single foraging bout.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Nectar & pollen', note: 'Eastern Bumblebees work the large, accessible orange coneflower disks efficiently, often visiting hundreds of blooms in a single foraging bout through the patch.' },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Nectar & pollen', note: "The reliably perennial nature of R. fulgida means Brown-belted Bumblebees return to the same patch year after year — treating it as a 'known good' feeding location within their foraging territory." },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Nectar & pollen', note: 'American Bumblebees forage strongly on coneflowers throughout summer. Supporting this declining species requires consistent, high-quality floral resources like orange coneflower across the full growing season.' },
           { name: 'American Goldfinch', sci: 'Spinus tristis', type: 'bird',
             role: 'Seed consumer', note: 'The tall, persistent seed cones of fulgida stay on the plant into winter, providing a reliable source of seeds after Rudbeckia hirta has finished.' },
         ],
@@ -389,7 +431,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 17,
         biosphereBonus: 7,
         cost: 25,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -411,14 +453,16 @@ export const ECOREGIONS = [
             role: 'Night nectar pollinator', note: 'This large, green-and-pink hawk-moth pollinates evening primrose with its long tongue, accessing nectar that most insects cannot reach. Its caterpillars feed on grape and Virginia creeper.' },
           { name: 'White-Lined Sphinx', sci: 'Hyles lineata', type: 'moth',
             role: 'Night pollinator', note: 'One of the most widespread hawk-moths in North America, visible at dusk hovering over evening primrose. Its fat caterpillars are important food for ground-nesting wasps and birds.' },
-          { name: 'Sweat Bees', sci: 'Lasioglossum spp.', type: 'bee',
-            role: 'Early-morning nectar', note: 'As flowers begin to close in the morning, early-rising sweat bees are often the last visitors, gathering the remaining pollen.' },
+          { name: 'Zephyr Sweat Bee', sci: 'Lasioglossum zephyrum', type: 'bee',
+            role: 'Early-morning nectar', note: 'As evening primrose flowers begin to close in the morning, early-rising Zephyr Sweat Bees arrive to gather the remaining pollen — a brief but productive foraging window that few other bees exploit.' },
+          { name: 'Bicolored Sweat Bee', sci: 'Agapostemon virescens', type: 'bee',
+            role: 'Early-morning nectar', note: 'The Bicolored Sweat Bee is a consistent morning visitor to evening primrose, collecting pollen from the overnight-opened flowers before the blooms close for the day.' },
         ],
         wildlifeNote: 'A plant that reveals an entirely different ecological world when observed after dark. The night-blooming guild of moths it supports does not exist anywhere in a conventional garden.',
         caterpillarSpp: 12,
         biosphereBonus: 7,
         cost: 22,
-        duration: 40,
+        duration: 10,
       },
 
       {
@@ -447,7 +491,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 73,
         biosphereBonus: 8,
         cost: 28,
-        duration: 45,
+        duration: 14,
       },
 
       {
@@ -465,8 +509,12 @@ export const ECOREGIONS = [
             role: 'Pollen specialist', note: 'This late-blooming sunflower captures Svastra bees just before they complete their season, extending their active period and potential brood production.' },
           { name: 'Monarch', sci: 'Danaus plexippus', type: 'butterfly',
             role: 'Late-season migration nectar', note: 'Swamp sunflower\'s October bloom means it catches Monarchs still moving through the landscape after goldenrod and boneset have largely finished.' },
-          { name: 'Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Late nectar & pollen', note: 'Late-season bumble bee queens strip pollen from swamp sunflower heads in October in a final push before hibernation. In wet areas, this may be the primary late-season pollen source available.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Late nectar & pollen', note: 'Eastern Bumblebee queens strip pollen from swamp sunflower heads in October in a final push before hibernation. In wet areas, this is often the last substantial pollen source of the season.' },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Late nectar & pollen', note: "Swamp sunflower's October bloom is one of the last pollen sources of the year. Brown-belted Bumblebee queens visit the large disk flowers repeatedly, maximizing fat storage in the final weeks before winter." },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Late nectar & pollen', note: 'The American Bumblebee is strongly associated with open, wet habitats — exactly where swamp sunflower thrives. This late-season overlap makes this plant especially important for this declining species.' },
           { name: 'American Goldfinch', sci: 'Spinus tristis', type: 'bird',
             role: 'Seed consumer', note: 'Goldfinches that have finished with earlier sunflower seeds migrate to swamp sunflower for its late harvest, following the bloom sequence across the landscape.' },
         ],
@@ -474,7 +522,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 73,
         biosphereBonus: 8,
         cost: 28,
-        duration: 45,
+        duration: 14,
       },
 
       {
@@ -490,8 +538,10 @@ export const ECOREGIONS = [
         insectsHosted: [
           { name: 'Gaillardia Specialist Bee', sci: 'Andrena helianthi', type: 'bee',
             role: 'Pollen specialist', note: 'This small mining bee collects pollen primarily from plants in the daisy family, with a specific preference for Gaillardia and sunflowers. It is a specialist of open, sunny, sandy habitats.' },
-          { name: 'Long-Horned Bees', sci: 'Melissodes spp.', type: 'bee',
-            role: 'Pollen source', note: 'Long-horned bees are medium-sized, fast-moving bees with unusually long antennae. Males sleep on the stems at night. Several Melissodes species use Gaillardia as a primary pollen source.' },
+          { name: 'Common Longhorn Bee', sci: 'Melissodes communis', type: 'bee',
+            role: 'Pollen source', note: 'One of the most frequently encountered Melissodes in the SE USA, the Common Longhorn Bee is a fast-moving forager that uses Gaillardia as one of its primary late-summer pollen sources.' },
+          { name: 'Agile Longhorn Bee', sci: 'Melissodes agilis', type: 'bee',
+            role: 'Pollen source', note: 'Males of this medium-sized native bee have conspicuously long antennae and are often the most numerous bee found sleeping on blanketflower stems on cool mornings before the day warms.' },
           { name: 'Various Skippers', sci: 'Hesperiidae spp.', type: 'butterfly',
             role: 'Nectar source', note: 'The red-and-yellow flowers are strongly attractive to grass skippers and spread-wing skippers, which use the large disk flowers as landing platforms for feeding.' },
           { name: 'Fiery Skipper', sci: 'Hylephila phyleus', type: 'butterfly',
@@ -501,7 +551,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 8,
         biosphereBonus: 5,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -519,8 +569,10 @@ export const ECOREGIONS = [
             role: 'Larval host', note: 'Checkerspot larvae use Coreopsis as a host alongside Rudbeckia and asters. Planting all three in proximity helps support a continuous larval habitat mosaic.' },
           { name: 'Gray Hairstreak', sci: 'Strymon melinus', type: 'butterfly',
             role: 'Larval host & nectar', note: 'Gray Hairstreak larvae feed on the flowers and seed pods of Coreopsis. This small copper-grey butterfly is easy to overlook but remarkably common where its hosts grow.' },
-          { name: 'Long-Horned Bees', sci: 'Melissodes spp.', type: 'bee',
-            role: 'Pollen source', note: 'Melissodes bees are among the most efficient Coreopsis pollinators, collecting pollen and nectar simultaneously from the open, accessible disk flowers.' },
+          { name: 'Common Longhorn Bee', sci: 'Melissodes communis', type: 'bee',
+            role: 'Pollen source', note: 'One of the most efficient Coreopsis pollinators, the Common Longhorn Bee collects pollen and nectar simultaneously from the open disk flowers, often moving through an entire patch in a single fast-moving foraging bout.' },
+          { name: 'Confusing Longhorn Bee', sci: 'Melissodes confusus', type: 'bee',
+            role: 'Pollen source', note: 'Named for its close resemblance to related species, the Confusing Longhorn Bee is a frequent Coreopsis visitor throughout the SE USA, arriving in numbers when lanceleaf coreopsis reaches peak bloom.' },
           { name: 'American Goldfinch', sci: 'Spinus tristis', type: 'bird',
             role: 'Seed consumer', note: 'The small, flattened seeds of Coreopsis are a favourite of goldfinches in late summer. Allow the seed heads to mature and you\'ll have a bird feeder that restores itself.' },
         ],
@@ -528,7 +580,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 12,
         biosphereBonus: 6,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -544,16 +596,22 @@ export const ECOREGIONS = [
         insectsHosted: [
           { name: 'Silvery Checkerspot', sci: 'Chlosyne nycteis', type: 'butterfly',
             role: 'Larval host', note: 'The larger flower size of grandiflora means more oviposition sites for checkerspot females. A patch in bloom is worth pausing at to watch for egg-laying in early summer.' },
-          { name: 'Native Mining Bees', sci: 'Andrena spp.', type: 'bee',
-            role: 'Pollen source', note: 'The fringed petals of large flower tickseed allow bees to access pollen from unusual angles, making it a productive foraging plant for smaller bees that can\'t land on the disk directly.' },
-          { name: 'Bumble Bees', sci: 'Bombus spp.', type: 'bee',
-            role: 'Nectar & pollen', note: 'The large flowers are one of bumble bees\' preferred coreopsis species due to the ease of landing and the volume of pollen reward per visit.' },
+          { name: "Carlin's Mining Bee", sci: 'Andrena carlini', type: 'bee',
+            role: 'Pollen source', note: "The fringed petals let bees access pollen from unusual angles. Carlin's Mining Bee is among the first miners to locate coreopsis each spring, nesting in garden paths and foraging the open flowers efficiently." },
+          { name: "Nason's Mining Bee", sci: 'Andrena nasonii', type: 'bee',
+            role: 'Pollen source', note: "A common SE USA spring miner, Nason's Mining Bee forages the fringed flowers of large-flower tickseed for pollen loads it carries in dense golden masses on its hind legs back to its nest." },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Nectar & pollen', note: "The large flowers of C. grandiflora are a preferred coreopsis species for Eastern Bumblebees due to the ease of landing and the generous pollen reward — visits are brief but highly productive." },
+          { name: 'Brown-belted Bumblebee', sci: 'Bombus griseocollis', type: 'bee',
+            role: 'Nectar & pollen', note: "Large-flower tickseed's early bloom means Brown-belted Bumblebees visit it in spring before many other summer wildflowers have opened — an early-season resource as colonies are rapidly expanding." },
+          { name: 'American Bumblebee', sci: 'Bombus pensylvanicus', type: 'bee',
+            role: 'Nectar & pollen', note: 'Coreopsis grandiflora blooms when American Bumblebee colonies are at their largest. Abundant pollen during peak colony growth can directly determine the size and health of the overwintering queen cohort.' },
         ],
         wildlifeNote: 'Because it blooms from spring into summer before most other natives, it fills a critical early-season gap between spring ephemerals and summer perennials.',
         caterpillarSpp: 12,
         biosphereBonus: 6,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       {
@@ -567,10 +625,12 @@ export const ECOREGIONS = [
         height: '1–2 ft',
         seasonOfInterest: 'Late Summer through Fall',
         insectsHosted: [
-          { name: 'Mining Bees', sci: 'Andrena spp.', type: 'bee',
-            role: 'Pollen source', note: 'Several Andrena species forage on golden-aster in late summer, collecting the dense, dry pollen of its disk flowers.' },
-          { name: 'Sweat Bees', sci: 'Halictus & Lasioglossum spp.', type: 'bee',
-            role: 'Nectar & pollen', note: 'Sweat bees are the most frequent visitors to plants in dry, sandy habitats. Golden-aster is a key autumn resource in the southeastern coastal plain ecosystem.' },
+          { name: 'Hairy-banded Mining Bee', sci: 'Andrena hirticincta', type: 'bee',
+            role: 'Pollen source', note: 'A fall-active specialist that synchronizes its adult flight season with the bloom of goldenrods and golden-asters. It nests in the same dry, sandy soils where Maryland Golden-Aster thrives — a plant and bee perfectly matched.' },
+          { name: 'Ligated Furrow Bee', sci: 'Halictus ligatus', type: 'bee',
+            role: 'Nectar & pollen', note: 'The most commonly encountered sweat bee in dry, open habitats of the SE coastal plain. It nests in bare sandy soil and is one of the last bees still actively foraging in late fall when golden-aster finishes blooming.' },
+          { name: 'Zephyr Sweat Bee', sci: 'Lasioglossum zephyrum', type: 'bee',
+            role: 'Nectar & pollen', note: 'In the dry, sunny habitats where Maryland Golden-Aster specializes, the Zephyr Sweat Bee is a consistent and frequent visitor throughout the late-summer and fall bloom period.' },
           { name: 'Various Skippers', sci: 'Hesperiidae spp.', type: 'butterfly',
             role: 'Nectar source', note: 'Grass and spread-wing skippers are abundant in the dry meadow and savanna habitats where Maryland Golden-Aster is most at home, making it an important fueling plant for them.' },
         ],
@@ -578,7 +638,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 10,
         biosphereBonus: 5,
         cost: 20,
-        duration: 35,
+        duration: 7,
       },
 
       // ══ SHRUBS/SMALL TREES ═════════════════════════════════════════════════
@@ -602,14 +662,16 @@ export const ECOREGIONS = [
             role: 'Larval host', note: 'One of North America\'s largest and most beautiful moths, with eyespot wing markings that startled vertebrate predators. Its caterpillars feed on alder, oak, maple, and birch. Seeing one in your yard is a measure of true habitat quality.' },
           { name: 'American Woodcock', sci: 'Scolopax minor', type: 'bird',
             role: 'Nesting habitat', note: 'This beloved and bizarre shorebird that lives in forests uses alder thickets as primary nesting and brooding habitat. The males perform their "sky dance" courtship display in openings adjacent to alder groves at dawn and dusk.' },
-          { name: 'Native Bees', sci: 'Multiple spp.', type: 'bee',
-            role: 'Early-spring pollen', note: 'Alder catkins open before most bees are active, but bumble bee queens emerging from hibernation are among the first to harvest this essential early pollen.' },
+          { name: 'Eastern Bumblebee', sci: 'Bombus impatiens', type: 'bee',
+            role: 'Early-spring pollen', note: 'Bumble bee queens emerging from winter are among the first to harvest alder catkin pollen — critical for fueling the solitary nest-founding phase before other spring flowers open.' },
+          { name: "Carlin's Mining Bee", sci: 'Andrena carlini', type: 'bee',
+            role: 'Early-spring pollen', note: "One of the earliest mining bees to emerge in spring, Carlin's Mining Bee times its season to overlap with alder catkin availability — collecting the protein-rich pollen that jumpstarts its nesting season." },
         ],
         wildlifeNote: 'As a nitrogen fixer, smooth alder builds soil fertility that benefits neighbouring plants. Its roots stabilize streambanks, preventing erosion. A 15-foot shrub supports an entire community.',
         caterpillarSpp: 255,
         biosphereBonus: 12,
         cost: 55,
-        duration: 90,
+        duration: 21,
       },
 
       {
@@ -638,7 +700,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 557,
         biosphereBonus: 15,
         cost: 70,
-        duration: 120,
+        duration: 30,
       },
 
       // ══ TREES ══════════════════════════════════════════════════════════════
@@ -669,7 +731,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 203,
         biosphereBonus: 16,
         cost: 85,
-        duration: 200,
+        duration: 45,
       },
 
       {
@@ -700,7 +762,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 413,
         biosphereBonus: 20,
         cost: 90,
-        duration: 240,
+        duration: 60,
       },
 
       {
@@ -729,7 +791,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 534,
         biosphereBonus: 22,
         cost: 100,
-        duration: 270,
+        duration: 75,
       },
 
       {
@@ -758,7 +820,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 285,
         biosphereBonus: 20,
         cost: 90,
-        duration: 240,
+        duration: 60,
       },
 
       {
@@ -787,7 +849,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 219,
         biosphereBonus: 18,
         cost: 90,
-        duration: 270,
+        duration: 75,
       },
 
       {
@@ -816,7 +878,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 534,
         biosphereBonus: 22,
         cost: 100,
-        duration: 270,
+        duration: 75,
       },
 
       {
@@ -845,7 +907,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 534,
         biosphereBonus: 22,
         cost: 100,
-        duration: 270,
+        duration: 75,
       },
 
       {
@@ -876,7 +938,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 557,
         biosphereBonus: 30,
         cost: 120,
-        duration: 300,
+        duration: 90,
       },
 
       {
@@ -905,7 +967,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 455,
         biosphereBonus: 24,
         cost: 100,
-        duration: 240,
+        duration: 60,
       },
 
       {
@@ -934,7 +996,7 @@ export const ECOREGIONS = [
         caterpillarSpp: 456,
         biosphereBonus: 25,
         cost: 110,
-        duration: 270,
+        duration: 75,
       },
 
     ], // end plants

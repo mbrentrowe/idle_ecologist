@@ -32,7 +32,7 @@ export const WORK_ACTIVITIES = [
     },
 
     produce(zone, { zoneProductMap, cropInventory, cropStats, productStats,
-                    productInventory, autoSellSet, gold, CROPS }) {
+                    productInventory, autoSellSet, gold, CROPS, goldMultiplier = 1 }) {
       const cropId = zoneProductMap.get(zone.name);
       if (!cropId) return null;
       const cropType = CROPS[cropId];
@@ -47,8 +47,9 @@ export const WORK_ACTIVITIES = [
       const stat = productStats.get(productKey);
       if (stat) stat.crafted += 1;
       if (autoSellSet.has(productKey)) {
-        gold.add(ap.goldValue);
-        if (stat) { stat.sold += 1; stat.lifetimeSales += ap.goldValue; }
+        const artisanEarned = ap.goldValue * goldMultiplier;
+        gold.add(artisanEarned);
+        if (stat) { stat.sold += 1; stat.lifetimeSales += artisanEarned; }
       } else {
         productInventory.set(productKey, (productInventory.get(productKey) || 0) + 1);
       }

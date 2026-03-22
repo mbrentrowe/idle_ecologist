@@ -5,10 +5,76 @@ import { CROPS, CropInstance } from './crops.js';
 import { WORK_ACTIVITIES }     from './activityRegistry.js';
 import { RESEARCH }            from './research.js';
 import { ECOREGIONS, findPlant } from './ecoregions.js';
+import { RANCH_ANIMALS, RANCH_ANIMAL_LIST } from './ranch.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-export const DAY_REAL_SECS = 240; // 4 real minutes = 1 in-game day
-const SAVE_KEY             = 'idle-ecologist-text-v1';
+export const YEAR_REAL_SECS = 8 * 3600;             // 8 real hours = 1 in-game year
+export const DAY_REAL_SECS  = YEAR_REAL_SECS / 365; // ≈78.9 real seconds = 1 in-game day
+const SAVE_KEY              = 'idle-ecologist-text-v1';
+
+// ── Calendar ──────────────────────────────────────────────────────────────────
+/** Gregorian-style month table (no leap years — always 365 days). */
+export const CALENDAR_MONTHS = [
+  { name: 'January',   abbr: 'Jan', days: 31 },
+  { name: 'February',  abbr: 'Feb', days: 28 },
+  { name: 'March',     abbr: 'Mar', days: 31 },
+  { name: 'April',     abbr: 'Apr', days: 30 },
+  { name: 'May',       abbr: 'May', days: 31 },
+  { name: 'June',      abbr: 'Jun', days: 30 },
+  { name: 'July',      abbr: 'Jul', days: 31 },
+  { name: 'August',    abbr: 'Aug', days: 31 },
+  { name: 'September', abbr: 'Sep', days: 30 },
+  { name: 'October',   abbr: 'Oct', days: 31 },
+  { name: 'November',  abbr: 'Nov', days: 30 },
+  { name: 'December',  abbr: 'Dec', days: 31 },
+];
+
+/**
+ * Seasons defined by their start day-of-year (1-indexed, based on standard
+ * equinox/solstice dates).  Each season is ~2 real hours at DAY_REAL_SECS pace.
+ *   Spring  Mar 20 → doy  79   (~93 days, ~2h02m)
+ *   Summer  Jun 21 → doy 172   (~93 days, ~2h02m)
+ *   Fall    Sep 22 → doy 265   (~90 days, ~1h58m)
+ *   Winter  Dec 21 → doy 355   (~89 days, ~1h57m)
+ */
+export const SEASONS = [
+  { name: 'Spring', emoji: '🌸', startDoy: 79  },
+  { name: 'Summer', emoji: '☀️', startDoy: 172 },
+  { name: 'Fall',   emoji: '🍂', startDoy: 265 },
+  { name: 'Winter', emoji: '❄️', startDoy: 355 },
+];
+
+/**
+ * Convert a monotonic in-game day number (1-based) into a full calendar date.
+ * @param {number} totalDays  engine.inGameDay
+ * @returns {{ year, dayOfYear, monthIdx, day, month, season }}
+ *   year      — 1-based year number
+ *   dayOfYear — 1-365
+ *   monthIdx  — 0-11 index into CALENDAR_MONTHS
+ *   day       — 1-based day within the month
+ *   month     — CALENDAR_MONTHS entry
+ *   season    — SEASONS entry
+ */
+export function calendarDate(totalDays) {
+  const year     = Math.floor((totalDays - 1) / 365) + 1;
+  const dayOfYear = ((totalDays - 1) % 365) + 1;
+
+  // Resolve month + day-of-month
+  let remaining = dayOfYear;
+  let monthIdx  = 0;
+  for (let i = 0; i < CALENDAR_MONTHS.length; i++) {
+    if (remaining <= CALENDAR_MONTHS[i].days) { monthIdx = i; break; }
+    remaining -= CALENDAR_MONTHS[i].days;
+  }
+
+  // Resolve season (latest season whose startDoy ≤ dayOfYear, wrapping for winter)
+  let season = SEASONS[3]; // default winter (covers Jan 1 – Mar 19)
+  for (let i = SEASONS.length - 1; i >= 0; i--) {
+    if (dayOfYear >= SEASONS[i].startDoy) { season = SEASONS[i]; break; }
+  }
+
+  return { year, dayOfYear, monthIdx, day: remaining, month: CALENDAR_MONTHS[monthIdx], season };
+}
 
 // ── Zone definitions (no Tiled map needed) ────────────────────────────────────
 export const BASE_ZONE_ACRES   = 1;
@@ -30,18 +96,18 @@ export function workerUpgradeCost(def, currentWorkers) {
 }
 
 export const FARM_ZONE_DEFS = [
-  { name: 'Strawberry Glen',    cropId: 'strawberry',   cost:          0 }, // starter
-  { name: 'Scallion Strip',     cropId: 'greenOnion',   cost:      10000 },
-  { name: 'Spud Furrows',       cropId: 'potato',       cost:      20000 },
-  { name: 'Onion Dell',         cropId: 'onion',        cost:      30000 },
-  { name: 'Carrot Hollow',      cropId: 'carrot',       cost:      50000 },
-  { name: 'Blueberry Thicket',  cropId: 'blueberry',    cost:      70000 },
-  { name: 'Parsnip Heath',      cropId: 'parsnip',      cost:     100000 },
-  { name: 'Lettuce Glade',      cropId: 'lettuce',      cost:     150000 },
-  { name: 'Cauliflower Terrace',cropId: 'cauliflower',  cost:     200000 },
-  { name: 'Rice Paddies',       cropId: 'rice',         cost:     300000 },
-  { name: 'Broccoli Stand',     cropId: 'broccoli',     cost:     500000 },
-  { name: 'Asparagus Spire',    cropId: 'asparagus',    cost:     750000 },
+  { name: 'Strawberry Patch',      cropId: 'strawberry',  cost:          0 }, // starter
+  { name: 'Scallion Row',          cropId: 'greenOnion',  cost:      10000 },
+  { name: 'Sweet Potato Beds',     cropId: 'potato',      cost:      20000 },
+  { name: 'Okra Row',              cropId: 'onion',       cost:      30000 },
+  { name: 'Peanut Bottom',         cropId: 'carrot',      cost:      50000 },
+  { name: 'Rabbiteye Thicket',     cropId: 'blueberry',   cost:      70000 },
+  { name: 'Peach Orchard',         cropId: 'parsnip',     cost:     100000 },
+  { name: 'Lettuce Glade',         cropId: 'lettuce',     cost:     150000 },
+  { name: 'Collard Patch',         cropId: 'cauliflower', cost:     200000 },
+  { name: 'Carolina Gold Paddies', cropId: 'rice',        cost:     300000 },
+  { name: 'Broccoli Field',        cropId: 'broccoli',    cost:     500000 },
+  { name: 'Tomato Hill',           cropId: 'asparagus',   cost:     750000 },
 ];
 
 /** Cost to buy one extra acre in a given zone.
@@ -57,48 +123,72 @@ export function acreUpgradeCost(def, currentAcres) {
 }
 
 export const ARTISAN_ZONE_DEFS = [
-  { name: 'The Berry Press',      cropId: 'strawberry',   cost:        75000 },
-  { name: 'The Pickle House',     cropId: 'greenOnion',   cost:       225000 },
-  { name: 'The Root Cellar',      cropId: 'potato',       cost:       675000 },
-  { name: 'The Brine Works',      cropId: 'onion',        cost:      2025000 },
-  { name: 'The Carrot Dryer',     cropId: 'carrot',       cost:      6075000 },
-  { name: 'The Berry Winery',     cropId: 'blueberry',    cost:     18225000 },
-  { name: 'The Parsnip Still',    cropId: 'parsnip',      cost:     54675000 },
-  { name: 'The Leaf Works',       cropId: 'lettuce',      cost:    164025000 },
-  { name: 'The Floret House',     cropId: 'cauliflower',  cost:    492075000 },
-  { name: 'The Rice Mill',        cropId: 'rice',         cost:   1476225000 },
-  { name: 'The Brassica Works',   cropId: 'broccoli',     cost:   4428675000 },
-  { name: 'The Asparagus Cellar', cropId: 'asparagus',    cost:  13286025000 },
+  { name: 'The Jam House',             cropId: 'strawberry',  cost:        75000 },
+  { name: 'The Brine Shed',            cropId: 'greenOnion',  cost:       225000 },
+  { name: 'The Sweet Potato Cellar',   cropId: 'potato',      cost:       675000 },
+  { name: 'The Pickle Barrel',         cropId: 'onion',       cost:      2025000 },
+  { name: 'The Peanut Mill',           cropId: 'carrot',      cost:      6075000 },
+  { name: 'The Berry Press',           cropId: 'blueberry',   cost:     18225000 },
+  { name: 'The Peach Smokehouse',      cropId: 'parsnip',     cost:     54675000 },
+  { name: 'The Leaf Works',            cropId: 'lettuce',     cost:    164025000 },
+  { name: 'The Greens Cannery',        cropId: 'cauliflower', cost:    492075000 },
+  { name: 'The Rice Mill',             cropId: 'rice',        cost:   1476225000 },
+  { name: 'The Brassica Works',        cropId: 'broccoli',    cost:   4428675000 },
+  { name: 'The Tomato Works',          cropId: 'asparagus',   cost:  13286025000 },
 ];
 
-/** Maps old flavour-only zone names → new crop-matching names for save migration. */
+/** Maps all historical zone names → current SE USA Plains names for save migration.
+ *  Single-pass lookup — all intermediate names point directly to the final SE name.
+ */
 export const ZONE_NAME_MIGRATION = {
-  // Farm zones
-  'Sunflower Patch':           'Strawberry Glen',
-  'Clover Corner':             'Scallion Strip',
-  'Buttercup Field':           'Spud Furrows',
-  'Willowbrook Plot':          'Onion Dell',
-  'Mossy Hollow':              'Carrot Hollow',
-  'Foxglove Run':              'Blueberry Thicket',
-  'Hawthorn Strip':            'Parsnip Heath',
-  'Ember Meadow':              'Lettuce Glade',
-  'Brackenfold':               'Cauliflower Terrace',
-  'Ironwood Terrace':          'Rice Paddies',
-  'Stonegate Field':           'Broccoli Stand',
-  'Copperleaf Plot':           'Asparagus Spire',
-  // Artisan zones
-  'The Potting Shed':          'The Berry Press',
-  'Oakwood Workshop':          'The Pickle House',
-  'Hearthside Cellar':         'The Root Cellar',
-  'Millstone Hall':            'The Brine Works',
-  'The Smokehouse':            'The Carrot Dryer',
-  'Coppergate Works':          'The Berry Winery',
-  'Ironbell Distillery':       'The Parsnip Still',
-  'Harvestmoon Press':         'The Leaf Works',
-  'The Grand Cooperage':       'The Floret House',
-  "Elder & Sons Manufactory":  'The Rice Mill',
-  'Stonebridge Fermentary':    'The Brassica Works',
-  'The Celestial Vault':       'The Asparagus Cellar',
+  // ── Farm zones: original generic names → SE names ──────────────────────────
+  'Sunflower Patch':            'Strawberry Patch',
+  'Clover Corner':              'Scallion Row',
+  'Buttercup Field':            'Sweet Potato Beds',
+  'Willowbrook Plot':           'Okra Row',
+  'Mossy Hollow':               'Peanut Bottom',
+  'Foxglove Run':               'Rabbiteye Thicket',
+  'Hawthorn Strip':             'Peach Orchard',
+  'Ember Meadow':               'Lettuce Glade',
+  'Brackenfold':                'Collard Patch',
+  'Ironwood Terrace':           'Carolina Gold Paddies',
+  'Stonegate Field':            'Broccoli Field',
+  'Copperleaf Plot':            'Tomato Hill',
+  // ── Farm zones: previous crop-specific names → SE names ────────────────────
+  'Strawberry Glen':            'Strawberry Patch',
+  'Scallion Strip':             'Scallion Row',
+  'Spud Furrows':               'Sweet Potato Beds',
+  'Onion Dell':                 'Okra Row',
+  'Carrot Hollow':              'Peanut Bottom',
+  'Blueberry Thicket':          'Rabbiteye Thicket',
+  'Parsnip Heath':              'Peach Orchard',
+  'Cauliflower Terrace':        'Collard Patch',
+  'Rice Paddies':               'Carolina Gold Paddies',
+  'Broccoli Stand':             'Broccoli Field',
+  'Asparagus Spire':            'Tomato Hill',
+  // ── Artisan zones: original generic names → SE names ───────────────────────
+  'The Potting Shed':           'The Jam House',
+  'Oakwood Workshop':           'The Brine Shed',
+  'Hearthside Cellar':          'The Sweet Potato Cellar',
+  'Millstone Hall':             'The Pickle Barrel',
+  'The Smokehouse':             'The Peanut Mill',
+  'Coppergate Works':           'The Berry Press',
+  'Ironbell Distillery':        'The Peach Smokehouse',
+  'Harvestmoon Press':          'The Leaf Works',
+  'The Grand Cooperage':        'The Greens Cannery',
+  "Elder & Sons Manufactory":   'The Rice Mill',
+  'Stonebridge Fermentary':     'The Brassica Works',
+  'The Celestial Vault':        'The Tomato Works',
+  // ── Artisan zones: previous crop-specific names → SE names ─────────────────
+  'The Berry Press':            'The Jam House',      // was strawberry artisan
+  'The Pickle House':           'The Brine Shed',
+  'The Root Cellar':            'The Sweet Potato Cellar',
+  'The Brine Works':            'The Pickle Barrel',
+  'The Carrot Dryer':           'The Peanut Mill',
+  'The Berry Winery':           'The Berry Press',    // blueberry artisan
+  'The Parsnip Still':          'The Peach Smokehouse',
+  'The Floret House':           'The Greens Cannery',
+  'The Asparagus Cellar':       'The Tomato Works',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -122,20 +212,35 @@ export function createEngine() {
   let   gameSpeed    = 1;
   let   autoPilot    = false;
   let   gamePaused   = false;
-  let   calendarAccum = 0;
-  let   inGameDay    = 1;
+  let   calendarAccum  = 0;
+  let   inGameDay      = SEASONS[0].startDoy; // start on first day of Spring (Mar 20)
+  let   lastSeasonName = calendarDate(SEASONS[0].startDoy).season.name; // always 'Spring'
 
   // ── Research state ────────────────────────────────────────────────────────
   let   researchPoints      = 0;
   let   researchAccum       = 0;   // sub-point accumulator
   let   activeResearchId    = null;
-  let   activeResearchTimer = 0;   // elapsed seconds (×gameSpeed)
+  let   activeResearchTimer = 0;   // elapsed in-game days
   const completedResearch    = new Set();
 
   // ── Native Garden / Ecoregion state ──────────────────────────────────────
   const plantedSpecies     = new Set(); // planted plant IDs
   let   activePlantingId   = null;      // plant currently being established
-  let   activePlantingTimer = 0;        // elapsed seconds (×gameSpeed)
+  let   activePlantingTimer = 0;        // elapsed in-game days
+
+  // ── Creature discovery state ──────────────────────────────────────────────
+  // Each insect/wildlife in ecoregion plants is discovered via daily rolls.
+  // Pity timer guarantees discovery within CREATURE_PITY_DAYS days of opportunity.
+  const CREATURE_PITY_DAYS  = 1825; // 5 in-game years
+  const CREATURE_BASE_CHANCE = 0.02; // 2% per day base; ramps to 100% at pity max
+  const discoveredCreatures  = new Set();  // creature keys
+  const creaturePity          = new Map();  // creatureKey → days of opportunity elapsed
+  const creatureDiscoveryLog  = new Map();  // creatureKey → inGameDay when first discovered
+
+  /** Stable key for a creature tied to a specific host plant. */
+  function creatureKey(plantId, creatureName) {
+    return `${plantId}__${creatureName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+  }
 
   // ── Farm zones ──────────────────────────────────────────────────────────────
   const unlockedFarmZones = new Set(); // populated by checkAutoUnlocks()
@@ -161,11 +266,50 @@ export function createEngine() {
   const artisanWorkers = new Map(); // zoneName → worker count
   const artisanTimers  = new Map(); // zoneName → production timer
 
+  // ── Ranch state ────────────────────────────────────────────────────────────
+  const unlockedRanchAnimals = new Set(); // animal IDs
+  const ranchAcres   = new Map(); // animalId → acres
+  const ranchWorkers = new Map(); // animalId → worker count
+  const ranchTimers  = new Map(); // animalId → production timer
+  const ranchStats   = new Map(); // animalId → { produced, sold, lifetimeSales }
+  RANCH_ANIMAL_LIST.forEach(a => ranchStats.set(a.id, { produced: 0, sold: 0, lifetimeSales: 0 }));
+
+  function checkRanchUnlocks() {
+    const totalSold = Array.from(cropStats.values()).reduce((s, v) => s + v.sold, 0);
+    for (const animal of RANCH_ANIMAL_LIST) {
+      if (unlockedRanchAnimals.has(animal.id)) continue;
+      if (totalSold >= animal.unlockCriteria.totalSold) {
+        unlockedRanchAnimals.add(animal.id);
+        if (!ranchAcres.has(animal.id))   ranchAcres.set(animal.id, 1);
+        if (!ranchWorkers.has(animal.id)) ranchWorkers.set(animal.id, BASE_ZONE_WORKERS);
+      }
+    }
+  }
+
   // ── Crop state ──────────────────────────────────────────────────────────────
   const cropInventory = new Map();
   const autoSellSet   = new Set(Object.keys(CROPS));
   const cropStats     = new Map();
   Object.keys(CROPS).forEach(id => cropStats.set(id, { grown: 0, sold: 0, lifetimeSales: 0 }));
+
+  // ── Gold multiplier from Biosphere Points ───────────────────────────────────
+  // Scales from 1× (0 BP) to 5× (all BP unlocked) using a power-1.5 curve.
+  const MAX_BP = RESEARCH.reduce((s, r) => s + (r.effect?.biosphereBonus ?? 0), 0)
+               + ECOREGIONS.flatMap(e => e.plants).reduce((s, p) => s + (p.biosphereBonus ?? 0), 0)
+               + ECOREGIONS.flatMap(e => e.plants).reduce((s, p) => s + (p.insectsHosted?.length ?? 0), 0);
+
+  function goldMultiplier() {
+    if (MAX_BP <= 0) return 1;
+    const currentBP = [...completedResearch].reduce((sum, id) => {
+      const r = RESEARCH.find(p => p.id === id);
+      return sum + (r?.effect?.biosphereBonus ?? 0);
+    }, 0) + [...plantedSpecies].reduce((sum, id) => {
+      const result = findPlant(id);
+      return sum + (result?.plant?.biosphereBonus ?? 0);
+    }, 0) + discoveredCreatures.size;
+    const t = currentBP / MAX_BP;
+    return 1 + 4 * Math.pow(t, 1.5);
+  }
 
   // ── Artisan context builder ─────────────────────────────────────────────────
   function buildArtisanCtx() {
@@ -175,6 +319,7 @@ export function createEngine() {
       productStats:          artisanWS.productStats,
       productInventory:      artisanWS.productInventory,
       autoSellSet, gold, CROPS,
+      goldMultiplier: goldMultiplier(),
       gameSpeed,
       productionIntervalSecs: artisanAct.productionIntervalSecs,
     };
@@ -248,6 +393,13 @@ export function createEngine() {
           productionIntervalSecs: artisanAct.productionIntervalSecs }
       );
     }
+    for (const animalId of unlockedRanchAnimals) {
+      const animal = RANCH_ANIMALS[animalId];
+      if (!animal) continue;
+      const acres = ranchAcres.get(animalId) ?? 1;
+      const wm    = workerMultiplier(ranchWorkers.get(animalId) ?? BASE_ZONE_WORKERS);
+      gps += (animal.goldPerCycle * acres * wm * goldMultiplier()) / animal.productionIntervalSecs;
+    }
     return gps;
   }
 
@@ -300,17 +452,53 @@ export function createEngine() {
     }
   }
 
+  // ── Season transitions ─────────────────────────────────────────────────────
+  function onSeasonChange(oldSeason, newSeason) {
+    for (const [zoneName, instance] of zoneCrops) {
+      if (!unlockedFarmZones.has(zoneName)) continue;
+      const ct = instance.cropType;
+      if (ct.isInSeason(oldSeason) && !ct.isInSeason(newSeason)) {
+        // End of this crop's growing season — harvest if ready, then freeze
+        if (instance.isFullyGrown) {
+          const id = ct.id;
+          const tc = farmTileCount(zoneName);
+          const s  = cropStats.get(id);
+          s.grown += tc;
+          if (autoSellSet.has(id)) {
+            const earned = ct.yieldGold * tc * goldMultiplier();
+            gold.add(earned);
+            s.sold += tc;
+            s.lifetimeSales += earned;
+          } else {
+            cropInventory.set(id, (cropInventory.get(id) || 0) + tc);
+          }
+        }
+        instance.harvest(); // reset phase=0, timer=0 — zone is now dormant
+      }
+    }
+  }
+
   // ── Main tick ───────────────────────────────────────────────────────────────
   function tick() {
     if (gamePaused) return;
+    const _gMult = goldMultiplier(); // compute once; reused for all harvests this tick
 
     calendarAccum += gameSpeed;
-    if (calendarAccum >= DAY_REAL_SECS) { calendarAccum -= DAY_REAL_SECS; inGameDay++; }
+    if (calendarAccum >= DAY_REAL_SECS) {
+      calendarAccum -= DAY_REAL_SECS;
+      inGameDay++;
+      const newSeason = calendarDate(inGameDay).season.name;
+      if (newSeason !== lastSeasonName) {
+        onSeasonChange(lastSeasonName, newSeason);
+        lastSeasonName = newSeason;
+      }
+    }
 
     // Crop growth
     {
       for (const [zoneName, instance] of zoneCrops) {
         if (!unlockedFarmZones.has(zoneName)) continue;
+        if (!instance.cropType.isInSeason(lastSeasonName)) continue; // dormant
         const wm = workerMultiplier(zoneWorkers.get(zoneName) ?? BASE_ZONE_WORKERS);
         instance.tick(gameSpeed * wm);
         if (instance.isFullyGrown) {
@@ -319,7 +507,7 @@ export function createEngine() {
           const s     = cropStats.get(id);
           s.grown    += tc;
           if (autoSellSet.has(id)) {
-            const earned = instance.cropType.yieldGold * tc;
+            const earned = instance.cropType.yieldGold * tc * _gMult;
             gold.add(earned);
             s.sold          += tc;
             s.lifetimeSales += earned;
@@ -345,6 +533,23 @@ export function createEngine() {
       }
     }
 
+    // Ranch animal production
+    for (const animalId of unlockedRanchAnimals) {
+      const animal = RANCH_ANIMALS[animalId];
+      if (!animal) continue;
+      const wm = workerMultiplier(ranchWorkers.get(animalId) ?? BASE_ZONE_WORKERS);
+      let t = (ranchTimers.get(animalId) ?? 0) + gameSpeed * wm;
+      while (t >= animal.productionIntervalSecs) {
+        t -= animal.productionIntervalSecs;
+        const acres  = ranchAcres.get(animalId) ?? 1;
+        const earned = animal.goldPerCycle * acres * _gMult;
+        gold.add(earned);
+        const st = ranchStats.get(animalId);
+        if (st) { st.produced += acres; st.sold += acres; st.lifetimeSales += earned; }
+      }
+      ranchTimers.set(animalId, t);
+    }
+
     // Research point generation (1 pt per unlocked farm zone per in-game day)
     {
       researchAccum += gameSpeed * unlockedFarmZones.size / DAY_REAL_SECS;
@@ -356,7 +561,7 @@ export function createEngine() {
       if (activeResearchId) {
         const project = RESEARCH.find(r => r.id === activeResearchId);
         if (project) {
-          activeResearchTimer += gameSpeed;
+          activeResearchTimer += gameSpeed / DAY_REAL_SECS;
           if (activeResearchTimer >= project.duration) {
             completedResearch.add(activeResearchId);
             activeResearchId    = null;
@@ -370,7 +575,7 @@ export function createEngine() {
     if (activePlantingId) {
       const result = findPlant(activePlantingId);
       if (result) {
-        activePlantingTimer += gameSpeed;
+        activePlantingTimer += gameSpeed / DAY_REAL_SECS;
         if (activePlantingTimer >= result.plant.duration) {
           plantedSpecies.add(activePlantingId);
           activePlantingId    = null;
@@ -379,8 +584,29 @@ export function createEngine() {
       }
     }
 
+    // Creature discovery rolls (once per in-game day)
+    if (calendarAccum < gameSpeed) { // true only on the tick where calendarAccum just rolled over
+      for (const plantId of plantedSpecies) {
+        const result = findPlant(plantId);
+        if (!result) continue;
+        for (const creature of (result.plant.insectsHosted ?? [])) {
+          const ckey = creatureKey(plantId, creature.name);
+          if (discoveredCreatures.has(ckey)) continue;
+          const pity = creaturePity.get(ckey) ?? 0;
+          const chance = Math.min(1, CREATURE_BASE_CHANCE + (pity / CREATURE_PITY_DAYS) * (1 - CREATURE_BASE_CHANCE));
+          if (Math.random() < chance) {
+            discoveredCreatures.add(ckey);
+            creatureDiscoveryLog.set(ckey, inGameDay);
+          } else {
+            creaturePity.set(ckey, pity + 1);
+          }
+        }
+      }
+    }
+
     runAutoPilot();
     checkAutoUnlocks();
+    checkRanchUnlocks();
   }
 
   // ── Offline simulation ──────────────────────────────────────────────────────
@@ -389,23 +615,38 @@ export function createEngine() {
     const simSecs   = Math.min(realSecs, MAX_SECS);
     const goldBefore = gold.amount;
     const simTimers = new Map(artisanTimers);
+    const simRanchTimers = new Map(ranchTimers);
+    let offlineSeason = lastSeasonName;
+    // Each loop iteration = 1 real second. Live tick fires every 250ms (4/sec),
+    // so we advance 4 units per second to match the live rate.
+    const TICKS_PER_SEC = 4;
     let t = 0;
     while (t < simSecs) {
       t++;
-      calendarAccum++;
-      if (calendarAccum >= DAY_REAL_SECS) { calendarAccum -= DAY_REAL_SECS; inGameDay++; }
+      calendarAccum += TICKS_PER_SEC;
+      while (calendarAccum >= DAY_REAL_SECS) {
+        calendarAccum -= DAY_REAL_SECS;
+        inGameDay++;
+        const newSeason = calendarDate(inGameDay).season.name;
+        if (newSeason !== offlineSeason) {
+          onSeasonChange(offlineSeason, newSeason);
+          offlineSeason = newSeason;
+        }
+      }
+      const _offMult = goldMultiplier();
       {
         for (const [zoneName, instance] of zoneCrops) {
           if (!unlockedFarmZones.has(zoneName)) continue;
+          if (!instance.cropType.isInSeason(offlineSeason)) continue; // dormant
           const wm = workerMultiplier(zoneWorkers.get(zoneName) ?? BASE_ZONE_WORKERS);
-          instance.tick(wm);
+          instance.tick(wm * TICKS_PER_SEC);
           if (instance.isFullyGrown) {
             const id = instance.cropType.id;
             const tc = farmTileCount(zoneName);
             const s  = cropStats.get(id);
             s.grown += tc;
             if (autoSellSet.has(id)) {
-              const earned = instance.cropType.yieldGold * tc;
+              const earned = instance.cropType.yieldGold * tc * _offMult;
               gold.add(earned);
               s.sold += tc; s.lifetimeSales += earned;
             } else {
@@ -418,15 +659,33 @@ export function createEngine() {
       const ctx = buildArtisanCtx();
       for (const zn of artisanWS.unlockedSet) {
         const wm = workerMultiplier(artisanWorkers.get(zn) ?? BASE_ZONE_WORKERS);
-        let acc = (simTimers.get(zn) ?? 0) + wm;
+        let acc = (simTimers.get(zn) ?? 0) + wm * TICKS_PER_SEC;
         while (acc >= artisanAct.productionIntervalSecs) {
           acc -= artisanAct.productionIntervalSecs;
           artisanAct.produce({ name: zn }, ctx);
         }
         simTimers.set(zn, acc);
       }
+      // Ranch animal production (offline)
+      for (const animalId of unlockedRanchAnimals) {
+        const animal = RANCH_ANIMALS[animalId];
+        if (!animal) continue;
+        const wm = workerMultiplier(ranchWorkers.get(animalId) ?? BASE_ZONE_WORKERS);
+        let acc = (simRanchTimers.get(animalId) ?? 0) + wm * TICKS_PER_SEC;
+        while (acc >= animal.productionIntervalSecs) {
+          acc -= animal.productionIntervalSecs;
+          const acres  = ranchAcres.get(animalId) ?? 1;
+          const earned = animal.goldPerCycle * acres * _offMult;
+          gold.add(earned);
+          const st = ranchStats.get(animalId);
+          if (st) { st.produced += acres; st.sold += acres; st.lifetimeSales += earned; }
+        }
+        simRanchTimers.set(animalId, acc);
+      }
     }
-    for (const [k, v] of simTimers) artisanTimers.set(k, v);
+    lastSeasonName = offlineSeason;
+    for (const [k, v] of simTimers)      artisanTimers.set(k, v);
+    for (const [k, v] of simRanchTimers) ranchTimers.set(k, v);
     return { goldEarned: gold.amount - goldBefore, simSecs, capped: realSecs > MAX_SECS };
   }
 
@@ -434,7 +693,7 @@ export function createEngine() {
   function getState() {
     return {
       gold: gold.amount, autoPilot,
-      calendarAccum, inGameDay,
+      calendarAccum, inGameDay, lastSeasonName,
       unlockedFarmZones: [...unlockedFarmZones],
       zoneAcres:   Object.fromEntries(zoneAcres),
       zoneWorkers: Object.fromEntries(zoneWorkers),
@@ -450,9 +709,17 @@ export function createEngine() {
       artisanInventory: Object.fromEntries(artisanWS.productInventory),
       researchPoints, researchAccum,
       activeResearchId, activeResearchTimer,
-      completedResearch: [...completedResearch],
-      plantedSpecies:    [...plantedSpecies],
-      activePlantingId,  activePlantingTimer,
+      completedResearch:    [...completedResearch],
+      plantedSpecies:       [...plantedSpecies],
+      activePlantingId,     activePlantingTimer,
+      discoveredCreatures:   [...discoveredCreatures],
+      creaturePity:          Object.fromEntries(creaturePity),
+      creatureDiscoveryLog:  Object.fromEntries(creatureDiscoveryLog),
+      ranchAnimals:         [...unlockedRanchAnimals],
+      ranchAcres:           Object.fromEntries(ranchAcres),
+      ranchWorkers:         Object.fromEntries(ranchWorkers),
+      ranchTimers:          Object.fromEntries(ranchTimers),
+      ranchStats:           Object.fromEntries([...ranchStats].map(([k, v]) => [k, { ...v }])),
       savedAt: Date.now(),
     };
   }
@@ -484,6 +751,7 @@ export function createEngine() {
     if (typeof s.autoPilot    === 'boolean') autoPilot     = s.autoPilot;
     if (typeof s.calendarAccum === 'number') calendarAccum = s.calendarAccum;
     if (typeof s.inGameDay    === 'number')  inGameDay     = s.inGameDay;
+    lastSeasonName = (typeof s.lastSeasonName === 'string') ? s.lastSeasonName : calendarDate(inGameDay).season.name;
 
     if (Array.isArray(s.unlockedFarmZones)) {
       unlockedFarmZones.clear();
@@ -549,7 +817,28 @@ export function createEngine() {
     }
     if ('activePlantingId'    in s) activePlantingId    = s.activePlantingId;
     if (typeof s.activePlantingTimer === 'number') activePlantingTimer = s.activePlantingTimer;
+    if (Array.isArray(s.discoveredCreatures)) {
+      discoveredCreatures.clear();
+      s.discoveredCreatures.forEach(k => discoveredCreatures.add(k));
+    }
+    if (s.creaturePity) {
+      creaturePity.clear();
+      Object.entries(s.creaturePity).forEach(([k, v]) => creaturePity.set(k, v));
+    }
+    if (s.creatureDiscoveryLog) {
+      creatureDiscoveryLog.clear();
+      Object.entries(s.creatureDiscoveryLog).forEach(([k, v]) => creatureDiscoveryLog.set(k, v));
+    }
+    if (Array.isArray(s.ranchAnimals)) {
+      unlockedRanchAnimals.clear();
+      s.ranchAnimals.forEach(id => unlockedRanchAnimals.add(id));
+    }
+    if (s.ranchAcres)   { ranchAcres.clear();   Object.entries(s.ranchAcres).forEach(([k, v])   => ranchAcres.set(k, v)); }
+    if (s.ranchWorkers) { ranchWorkers.clear(); Object.entries(s.ranchWorkers).forEach(([k, v]) => ranchWorkers.set(k, v)); }
+    if (s.ranchTimers)  { ranchTimers.clear();  Object.entries(s.ranchTimers).forEach(([k, v])  => ranchTimers.set(k, v)); }
+    if (s.ranchStats)   Object.entries(s.ranchStats).forEach(([id, rs]) => { if (ranchStats.has(id)) Object.assign(ranchStats.get(id), rs); });
     checkAutoUnlocks(); // re-derive zoneProductMap and catch any new unlocks
+    checkRanchUnlocks();
   }
 
   function clearSave() { localStorage.removeItem(SAVE_KEY); }
@@ -560,8 +849,9 @@ export function createEngine() {
     gold,
     get gameSpeed()    { return gameSpeed;    },
     get autoPilot()    { return autoPilot;    },
-    get calendarAccum(){ return calendarAccum; },
-    get inGameDay()    { return inGameDay;     },
+    get calendarAccum()     { return calendarAccum;  },
+    get inGameDay()         { return inGameDay;       },
+    get currentSeasonName() { return lastSeasonName;  },
     CROPS,
     FARM_ZONE_DEFS,
     ARTISAN_ZONE_DEFS,
@@ -613,6 +903,31 @@ export function createEngine() {
       if (gold.amount < cost) return false;
       gold.add(-cost);
       artisanWorkers.set(name, current + 1);
+      return true;
+    },
+    // Ranch API
+    get unlockedRanchAnimals() { return unlockedRanchAnimals; },
+    ranchAcres,
+    ranchWorkers,
+    ranchStats,
+    upgradeRanchAcres(animalId) {
+      const animal  = RANCH_ANIMALS[animalId];
+      const current = ranchAcres.get(animalId) ?? 1;
+      if (!animal || !unlockedRanchAnimals.has(animalId)) return false;
+      const cost = acreUpgradeCost({ cost: animal.baseCost }, current);
+      if (gold.amount < cost) return false;
+      gold.add(-cost);
+      ranchAcres.set(animalId, current + 1);
+      return true;
+    },
+    upgradeRanchWorkers(animalId) {
+      const animal  = RANCH_ANIMALS[animalId];
+      const current = ranchWorkers.get(animalId) ?? BASE_ZONE_WORKERS;
+      if (!animal || !unlockedRanchAnimals.has(animalId)) return false;
+      const cost = workerUpgradeCost({ cost: animal.baseCost }, current);
+      if (gold.amount < cost) return false;
+      gold.add(-cost);
+      ranchWorkers.set(animalId, current + 1);
       return true;
     },
     setAutoSell(key, value)  { if (value) autoSellSet.add(key); else autoSellSet.delete(key); },
@@ -674,9 +989,20 @@ export function createEngine() {
         return sum + (result?.plant?.biosphereBonus ?? 0);
       }, 0);
     },
-    getTotalBiosphereScore() {
-      return this.getBiosphereScore() + this.getGardenBiosphereScore();
+    getCreatureBiosphereScore() {
+      return discoveredCreatures.size; // 1 BP per discovered creature
     },
+    getTotalBiosphereScore() {
+      return this.getBiosphereScore() + this.getGardenBiosphereScore() + this.getCreatureBiosphereScore();
+    },
+    getGoldMultiplier() { return goldMultiplier(); },
+    get maxBiosphereScore() { return MAX_BP; },
+    // Creature discovery API
+    discoveredCreatures,
+    creaturePity,
+    creatureDiscoveryLog,
+    creatureKey,
+    get CREATURE_PITY_DAYS() { return CREATURE_PITY_DAYS; },
     // Native Garden API
     get plantedSpecies()      { return plantedSpecies; },
     get activePlantingId()    { return activePlantingId; },
